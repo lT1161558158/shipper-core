@@ -1,0 +1,23 @@
+input {
+    //println "input 层"
+    StdInput {
+        codec 'SimpleCodec'
+        delimiter "\n"
+    }
+}
+
+filter {
+//    println "filter 层"
+    SplitFilter {
+        field "message"
+        terminator '@'
+    }
+}
+
+
+output {
+//    println "output 层"
+    StdOutput {
+        codec 'JsonCodec'
+    }
+}
