@@ -11,5 +11,5 @@ public interface Filter extends Handler {
      *
      * @param event 输入事件
      */
-    void filter(List<Map> event);
+    List<Map> filter(Map event);
 }

@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class StandardHandlerExecutor implements HandlerExecutor {
 
+
     @Override
     public void execute(Map<HandlerEnums, DSLDelegate> dsls) {
         DSLDelegate inputDelegate = dsls.get(HandlerEnums.INPUT);
@@ -32,25 +33,32 @@ public class StandardHandlerExecutor implements HandlerExecutor {
         }
         inputDelegate.getClosure().call();//创建input的上下文
         List<HandlerDefinition> handlerDefinitions = inputDelegate.getHandlerDefinitions();
-        handlerDefinitions.stream().map(handlerDefinition -> buildFuture(handlerDefinition,filterDelegate,outputDelegate)).forEach(CompletableFuture::join);
+        handlerDefinitions.stream().map(handlerDefinition -> buildFuture(handlerDefinition, filterDelegate, outputDelegate)).forEach(CompletableFuture::join);
     }
 
-    private CompletableFuture buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate){
+    private CompletableFuture buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
         return CompletableFuture.supplyAsync(() -> {
             input.getHandlerClosure().call();
             Handler inputHandler = input.getHandler();
             if (!(inputHandler instanceof Input))
                 return null;
             return ((Input) inputHandler).read();
-        }).thenApply(event->{
-            List<Map> events=new ArrayList<>();
+        }).thenApply(event -> {
+            List<Map> events = new ArrayList<>();
             events.add(event);
+            if (filterDelegate == null)
+                return events;
             filterDelegate.getClosure().call();
             for (HandlerDefinition handlerDefinition : filterDelegate.getHandlerDefinitions()) {
                 Handler handler = handlerDefinition.getHandler();
-                if (handler instanceof Filter){
-                    handlerDefinition.getHandlerClosure().call();
-                    ((Filter) handler).filter(events);
+                if (handler instanceof Filter) {
+                    List<Map> newListEvents = new ArrayList<>();
+                    events.forEach(aEvent -> {
+                        handlerDefinition.getHandlerClosure().call(aEvent);
+                        List<Map> newEvents = ((Filter) handler).filter(aEvent);
+                        newListEvents.addAll(newEvents);
+                    });
+                    events = newListEvents;
                 }
             }
             return events;
@@ -58,9 +66,9 @@ public class StandardHandlerExecutor implements HandlerExecutor {
             outputDelegate.getClosure().call();
             for (HandlerDefinition handlerDefinition : outputDelegate.getHandlerDefinitions()) {
                 Handler handler = handlerDefinition.getHandler();
-                if (handler instanceof Output){
-                    maps.forEach(event->{
-                        handlerDefinition.getHandlerClosure().call();
+                if (handler instanceof Output) {
+                    maps.forEach(event -> {
+                        handlerDefinition.getHandlerClosure().call(event);
                         ((Output) handler).write(event);
                     });
                 }

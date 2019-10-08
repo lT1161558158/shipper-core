@@ -1,13 +1,12 @@
 package oh.my.shipper.core.dsl
 
-
 import oh.my.shipper.core.builder.HandlerBuilder
 
 class DSLDelegate extends PropertiesDelegate {
     List<HandlerDefinition> handlerDefinitions = []
     Closure closure
     HandlerBuilder handlerBuilder
-    long timeout=-1
+    long timeout = -1
 
     def methodMissing(String name, Object obj) {
         Object[] args = obj
@@ -24,7 +23,7 @@ class DSLDelegate extends PropertiesDelegate {
                 closure.resolveStrategy = Closure.DELEGATE_ONLY
                 handlerDefinitions << definition
             } else {
-                Object.methodMissing(name, arg)
+                super.methodMissing(name, arg)
             }
         }
     }

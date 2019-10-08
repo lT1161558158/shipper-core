@@ -8,7 +8,6 @@ abstract class BaseCollectorScript extends Script {
 
     Map<HandlerEnums, DSLDelegate> handlerMap = [:]
     def dslParse(Closure closure, HandlerEnums handler){
-
         def delegate = new DSLDelegate()
         delegate.handlerBuilder=handlerBuilder
         delegate.closure = closure

@@ -18,6 +18,8 @@ filter {
 output {
 //    println "output 层"
     StdOutput {
+        if (it['message']=='hi')
+            println "hi pi"
         codec 'JsonCodec'
     }
 }
