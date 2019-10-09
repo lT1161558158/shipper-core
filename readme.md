@@ -50,9 +50,50 @@ input{
 
 上述dsl定义了两个输入源,`stdin`和`syslog`,其中syslog采用的协议为`udp`,并从`514`端口获取数据
 
+实际上input域中只有input的插件才会生效,其他域也类似
+
 #### 外部域
 
 在{}外部可以直接定义一些值,但这些定义的值一般仅作为被引用的内容
+
+#### codec
+codec的配置比较特殊
+它不属于基本域(input/filter/output)中的一部分而是在input或者output域中的一部分,但它也可以支持参数的设置,并且不设置参数的codec和设置参数的codec的编写方式截然不同
+不配置参数的codec
+
+```dsl
+Stdin {
+	codec "SimpleCodec"
+}
+Stdin {
+	codec = "SimpleCodec"
+}
+```
+
+配置参数的codec
+
+```dsl
+Stdin {
+	codec {
+		$"SimpleCodec"
+		arg = "arg"
+	}
+}
+Stdin {
+	codec {
+		$'SimpleCodec'
+		arg "arg"
+	}
+}
+```
+
+配置参数的codec使用$来引用codec的名字.
+
+#### 域名字
+
+实际上类似于`StdIn`和`SimpleCodec`这样的名字就是类的名字.
+
+这里也隐含了一个条件,编写的类名字不能够相同.
 
 #### 数据类型
 
@@ -100,17 +141,17 @@ input|codc|filter1|filter2|codc|output
 input|output
 ```
 
-实际上仅仅只有output也是可以作为一个`shipper`的,但大部分情况这种操作下是没有意义的(也许debug的时候可以使用)
+实际上如果没有至少一个input和output的域,执行时会报告一个错误
+
+> ```
+> at least one output/input must be provided
+> ```
 
 引用事件内容的方式如下
 
 ```groovy
 if (it['type'] == "web") {
-    grok {
-        match {
-            message "\\s+(?<request_time>\\d+(?:\\.\\d+)?)\\s+"
-        }
-    }
+    //xxx
 }
 ```
 
@@ -140,8 +181,76 @@ filter{
 
 可以访问在其他域中定义的值
 
-**要注意的是,只能向前引用(实际上event引用也遵循了这个原则)**
+**要注意的是,只能向前引用(实际上event引用也遵循了这个原则),必须先说明是什么,然后才能使用**
 
 #### 运算符
 
 几乎支持所有的运算符,实际上是groovy
+
+### 使用方式
+
+#### 运行
+
+主入口是`ShipperExecutor`接口
+
+该接口提供一个方法可供使用
+
+```java
+void executor(String dsl);
+```
+
+参数为dsl字符串
+
+这个函数可能抛出`ShipperException`
+
+一个标准的使用方式如下
+
+```java
+HandlerBuilder handlerBuilder = new HandlerBuilder();
+handlerBuilder.reLoadHandler();
+ShipperTaskBuilder ShipperTaskBuilder = new StandardShipperTaskBuilder();
+try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(handlerBuilder, ShipperTaskBuilder,threadPoolExecutor)) {
+    standardShipperExecutor.execute(dsl);
+} catch (RuntimeException e) {
+    log.error("dsl error [{}]", e.getMessage());
+}
+```
+
+该接口实现了`AutoClosed`接口,作用为关闭传入的`threadPoolExecutor`
+
+由上可知基本的使用方式如下
+
+1. 构造`HandlerBuilder`
+2. 加载(初始化)`HandlerBuilder`
+3. 构造一个`ShipperTaskBuilder`
+4. 构造一个`ShipperExecutor`
+5. 执行对应的dsl
+6. 释放资源
+
+#### 持续运行
+
+实际上input决定了一个shipperTask是否持续执行.在标准实现中只要input是可用的,即使所有output都失效了,也可以持续的执行.如果需要更改这个行为,可以重新实现一个task和builder.
+
+每个input都对应了一个执行线程,后续的filter之类的操作实际上是在这个线程中由上往下执行的.如果需要更改这个行为,可以重新实现task和builder.
+
+若想在运行时中止执行,可以通过在dsl中描述一个中止异常来进行.例如
+
+```dsl
+if(it['message']=="end")
+        throw new Exception("stop")
+```
+
+也可以通过input访问中止策略.即close函数.也可以使用中断中止任务运行.
+
+### 插件
+
+插件分为4类
+
+1. input
+2. output
+3. filter
+4. codec
+
+其中对于3,4最好的实现是纯代码,但有时需要保存一些状态,则需要考虑到实例状态.
+
+一个插件在一个dsl中只会进行生成一次,但对每个event应用插件动作时,会重新执行一次dsl中的初始化过程.

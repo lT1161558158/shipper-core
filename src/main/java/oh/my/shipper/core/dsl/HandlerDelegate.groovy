@@ -35,7 +35,7 @@ class HandlerDelegate {
             closure.delegate = new PropertiesDelegate()
             closure.resolveStrategy = Closure.DELEGATE_ONLY
             closure()
-            String name = closure.delegate.properties.get("name")
+            String name = closure.delegate.properties.get("\$")
             def codecHandler = handlerBuilder.builderHandler(name,closure.delegate.properties)
             handler.codec(codecHandler)
         }
