@@ -5,7 +5,7 @@ import groovy.lang.GroovyShell;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import oh.my.shipper.core.builder.HandlerBuilder;
-import oh.my.shipper.core.dsl.BaseCollectorScript;
+import oh.my.shipper.core.dsl.BaseShipperScript;
 import org.codehaus.groovy.control.CompilerConfiguration;
 
 import java.io.BufferedReader;
@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Data
 public class StandardCollectorExecutor implements CollectorExecutor {
-    public static final String DEFAULT_BASE_SCRIPT = BaseCollectorScript.class.getName();
+    public static final String DEFAULT_BASE_SCRIPT = BaseShipperScript.class.getName();
     public static final String HANDLER_BUILDER_NAME = "handlerBuilder";
     public static final String HANDLER_EXECUTOR_NAME =  "handlerExecutor";
     /**
