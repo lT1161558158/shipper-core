@@ -5,6 +5,8 @@ import groovy.lang.GroovyShell;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import oh.my.shipper.core.builder.HandlerBuilder;
+import oh.my.shipper.core.builder.ShipperTaskBuilder;
+import oh.my.shipper.core.builder.StandardShipperTaskBuilder;
 import oh.my.shipper.core.dsl.BaseShipperScript;
 import oh.my.shipper.core.dsl.DSLDelegate;
 import oh.my.shipper.core.enums.HandlerEnums;
@@ -13,7 +15,6 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -21,10 +22,10 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Data
-public class StandardCollectorExecutor implements CollectorExecutor {
+public class StandardShipperExecutor implements ShipperExecutor {
     public static final String DEFAULT_BASE_SCRIPT = BaseShipperScript.class.getName();
     public static final String HANDLER_BUILDER_NAME = "handlerBuilder";
-    public static final String HANDLER_EXECUTOR_NAME = "handlerExecutor";
+    public static final String HANDLER_EXECUTOR_NAME = "shipperTaskBuilder";
     public static final String HANDLER_MAP_NAME = "handlerMap";
 
     public static final String COMPLETABLE_FUTURE_NAME = "completableFuture";
@@ -34,22 +35,21 @@ public class StandardCollectorExecutor implements CollectorExecutor {
      */
     private String baseScript = DEFAULT_BASE_SCRIPT;
     private HandlerBuilder handlerBuilder;
-    private HandlerExecutor handlerExecutor;
+    private ShipperTaskBuilder shipperTaskBuilder;
+    private ExecutorService executorService;
 
-    public StandardCollectorExecutor(HandlerBuilder handlerBuilder, HandlerExecutor handlerExecutor) {
+
+    public StandardShipperExecutor(HandlerBuilder handlerBuilder, ShipperTaskBuilder shipperTaskBuilder, ExecutorService executorService) {
         this.handlerBuilder = handlerBuilder;
-        this.handlerExecutor = handlerExecutor;
+        this.shipperTaskBuilder = shipperTaskBuilder;
+        this.executorService = executorService;
     }
 
     @Override
-    public void executor(String dsl) {
-        handlerExecutor.execute(buildHandlerMap(dsl));
+    public void execute(String dsl) {
+        shipperTaskBuilder.builderTask(buildHandlerMap(dsl)).forEach(executorService::execute);
     }
 
-    @Override
-    public List<CompletableFuture<List<Map>>> submit(String dsl) {
-        return handlerExecutor.submit(buildHandlerMap(dsl));
-    }
 
     private Map<HandlerEnums, DSLDelegate> buildHandlerMap(String dsl) {
         Map<HandlerEnums, DSLDelegate> handlerMap = new HashMap<>();
@@ -57,7 +57,7 @@ public class StandardCollectorExecutor implements CollectorExecutor {
         compilerConfiguration.setScriptBaseClass(baseScript);
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
         groovyShell.setVariable(HANDLER_BUILDER_NAME, handlerBuilder);
-        groovyShell.setVariable(HANDLER_EXECUTOR_NAME, handlerExecutor);
+        groovyShell.setVariable(HANDLER_EXECUTOR_NAME, shipperTaskBuilder);
         groovyShell.setVariable(HANDLER_MAP_NAME, handlerMap);
         groovyShell.evaluate(dsl);
         return handlerMap;
@@ -72,23 +72,21 @@ public class StandardCollectorExecutor implements CollectorExecutor {
             @Override
             public Thread newThread(Runnable r) {
                 Thread thread = new Thread(r);
-                thread.setUncaughtExceptionHandler((t, e) -> log.error("", e));
+                thread.setUncaughtExceptionHandler((t, e) -> log.error("shipper executor error", e));
                 return thread;
             }
         });
-
-        HandlerExecutor handlerExecutor = new StandardHandlerExecutor(threadPoolExecutor);
-        StandardCollectorExecutor standardCollectorExecutor = new StandardCollectorExecutor(handlerBuilder, handlerExecutor);
-        try {
-            standardCollectorExecutor.executor(dsl);
+        ShipperTaskBuilder ShipperTaskBuilder = new StandardShipperTaskBuilder();
+        try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(handlerBuilder, ShipperTaskBuilder,threadPoolExecutor)) {
+            standardShipperExecutor.execute(dsl);
         } catch (RuntimeException e) {
             log.error("dsl error [{}]", e.getMessage());
         }
-        standardCollectorExecutor.close();
+
     }
 
     @Override
     public void close() throws Exception {
-        handlerExecutor.close();
+        executorService.shutdown();
     }
 }

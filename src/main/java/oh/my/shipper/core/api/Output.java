@@ -1,13 +1,12 @@
 package oh.my.shipper.core.api;
 
-import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 输出
  */
-public interface Output<Out> extends Closeable, CodifiedHandler<Map,Out> {
+public interface Output<Out> extends AutoCloseable, CodifiedHandler<Map,Out> {
 
 //    void writeOut()
 

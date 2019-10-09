@@ -5,8 +5,8 @@ import lombok.Data;
 import oh.my.shipper.core.api.Handler;
 
 @Data
-public class HandlerDefinition {
+public class HandlerDefinition<T extends Handler> {
     String name;
-    Handler handler;
+    T handler;
     Closure handlerClosure;
 }

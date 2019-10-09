@@ -1,10 +1,10 @@
 package oh.my.shipper.core.dsl
 
-
+import oh.my.shipper.core.api.Handler
 import oh.my.shipper.core.builder.HandlerBuilder
 
-class DSLDelegate extends PropertiesDelegate {
-    List<HandlerDefinition> handlerDefinitions = []
+class DSLDelegate<T extends Handler> extends PropertiesDelegate {
+    List<HandlerDefinition<T>> handlerDefinitions = []
     Closure closure
     HandlerBuilder handlerBuilder
     long timeout = -1

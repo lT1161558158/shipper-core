@@ -1,20 +1,17 @@
+
 input {
     //println "input 层"
-    StdInput2 {
+
+    StdInput {
+        println "请输入任意内容,以回车结束"
         codec 'SimpleCodec'
         delimiter "\n"
-    }
-    SplitFilter {
-        field "message"
-        if (it['message']=='h,i')
-            terminator ','
-        else
-            terminator '@'
     }
 }
 
 filter {
-
+    if(it['message']=="end")
+        throw new Exception("stop")
 //    println "filter 层"
     SplitFilter {
         field "message"

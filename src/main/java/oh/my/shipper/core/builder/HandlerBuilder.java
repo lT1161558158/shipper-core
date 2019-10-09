@@ -82,6 +82,12 @@ public final class HandlerBuilder {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     *
+     * @param name 处理器名字
+     * @return 未设置参数的 实例
+     */
     public Handler builderHandler(String name){
         Class<Handler> handleByName = findHandleByName(name);
         if (handleByName==null)
