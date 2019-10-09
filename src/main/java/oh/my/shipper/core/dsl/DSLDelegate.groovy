@@ -12,7 +12,7 @@ class DSLDelegate extends PropertiesDelegate {
     def methodMissing(String name, Object obj) {
         Object[] args = obj
         for (arg in args) {
-            if (arg instanceof Closure) {
+            if (arg instanceof Closure && handlerDefinitions.empty) {//第一次才执行创建 handlerDefinition
                 def handler = handlerBuilder.builderHandler(name)
                 def definition = new HandlerDefinition()
                 Closure closure = arg

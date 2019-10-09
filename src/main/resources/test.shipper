@@ -7,16 +7,25 @@ input {
 }
 
 filter {
+
 //    println "filter 层"
-    SplitFilter {
+    SplitFilter2 {
         field "message"
-        terminator '@'
+        if (it['message']=='h,i')
+            terminator ','
+        else
+            terminator '@'
     }
 }
 
 
 output {
 //    println "output 层"
+    if (it['message']=='hi')
+        println "hi output"
+    StdOutput {
+        codec 'JsonCodec'
+    }
     StdOutput {
         if (it['message']=='hi')
             println "hi pi"

@@ -44,44 +44,55 @@ public class StandardHandlerExecutor implements HandlerExecutor {
         handlerDefinitions.stream().map(handlerDefinition -> buildFuture(handlerDefinition, filterDelegate, outputDelegate)).forEach(CompletableFuture::join);
     }
 
-    private CompletableFuture buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
-        return CompletableFuture.supplyAsync(() -> {
-            input.getHandlerClosure().call();
-            Handler inputHandler = input.getHandler();
-            if (!(inputHandler instanceof Input))
-                return null;   
-            return ((Input) inputHandler).read();
-        }, executorService).thenApply(event -> {
-            List<Map> events = new ArrayList<>();
-            events.add(event);
-            if (filterDelegate == null)
-                return events;
-            filterDelegate.getClosure().call(event);
-            for (HandlerDefinition handlerDefinition : filterDelegate.getHandlerDefinitions()) {
-                Handler handler = handlerDefinition.getHandler();
-                if (handler instanceof Filter) {
-                    List<Map> newListEvents = new ArrayList<>();
-                    events.forEach(aEvent -> {
-                        handlerDefinition.getHandlerClosure().call(aEvent);
-                        List<Map> newEvents = ((Filter) handler).filter(aEvent);
-                        newListEvents.addAll(newEvents);
-                    });
-                    events = newListEvents;
-                }
-            }
+    private Map readInput(HandlerDefinition input){
+        input.getHandlerClosure().call();
+        Handler inputHandler = input.getHandler();
+        if (!(inputHandler instanceof Input))
+            return null;
+        return ((Input) inputHandler).read();
+    }
+    private List<Map> doFilter(DSLDelegate filterDelegate,Map event){
+        List<Map> events = new ArrayList<>();
+        events.add(event);
+        if (filterDelegate == null)
             return events;
-        }).thenAccept(events -> {
-            outputDelegate.getClosure().call();
+        filterDelegate.getClosure().call(event);
+        for (HandlerDefinition handlerDefinition : filterDelegate.getHandlerDefinitions()) {
+            Handler handler = handlerDefinition.getHandler();
+            if (handler instanceof Filter) {
+                List<Map> newListEvents = new ArrayList<>();
+                events.forEach(aEvent -> {
+                    handlerDefinition.getHandlerClosure().call(aEvent);
+                    List<Map> newEvents = ((Filter) handler).filter(aEvent);
+                    newListEvents.addAll(newEvents);
+                });
+                events = newListEvents;
+            }
+        }
+        return events;
+    }
+
+    private void doOutPut(DSLDelegate outputDelegate,List<Map> events){
+        events.forEach(event->{
+            outputDelegate.getClosure().call(event);
             for (HandlerDefinition handlerDefinition : outputDelegate.getHandlerDefinitions()) {
                 Handler handler = handlerDefinition.getHandler();
                 if (handler instanceof Output) {
-                    events.forEach(event -> {
-                        handlerDefinition.getHandlerClosure().call(event);
-                        ((Output) handler).write(event);
-                    });
+                    handlerDefinition.getHandlerClosure().call(event);
+                    ((Output) handler).write(event);
                 }
             }
         });
+    }
+    private CompletableFuture buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
+        return CompletableFuture.supplyAsync(() -> readInput(input), executorService)
+                .thenApply(event -> doFilter(filterDelegate,event))
+                .thenAccept(events ->doOutPut(outputDelegate,events))
+                .whenComplete((v,e)->{
+                    if (e!=null)
+                        log.error("",e);
+                })
+                ;
     }
 
     @Override
