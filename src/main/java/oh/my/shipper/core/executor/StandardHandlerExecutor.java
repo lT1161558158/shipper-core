@@ -9,12 +9,14 @@ import oh.my.shipper.core.api.Output;
 import oh.my.shipper.core.dsl.DSLDelegate;
 import oh.my.shipper.core.dsl.HandlerDefinition;
 import oh.my.shipper.core.enums.HandlerEnums;
+import oh.my.shipper.core.exception.ShipperException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Data
@@ -28,20 +30,21 @@ public class StandardHandlerExecutor implements HandlerExecutor {
 
     @Override
     public void execute(Map<HandlerEnums, DSLDelegate> dsls) {
+        submit(dsls).forEach(CompletableFuture::join);
+    }
+
+    @Override
+    public List<CompletableFuture<List<Map>>> submit(Map<HandlerEnums, DSLDelegate> dsls) {
         DSLDelegate inputDelegate = dsls.get(HandlerEnums.INPUT);
         DSLDelegate outputDelegate = dsls.get(HandlerEnums.OUTPUT);
         DSLDelegate filterDelegate = dsls.get(HandlerEnums.FILTER);
-        if (outputDelegate == null) {
-            log.error("at least one output must be provided");
-            return;
-        }
-        if (inputDelegate == null) {
-            log.error("at least one input must be provided");
-            return;
-        }
+        if (outputDelegate == null)
+            throw new ShipperException("at least one output must be provided");
+        if (inputDelegate == null)
+            throw new ShipperException("at least one input must be provided");
         inputDelegate.getClosure().call();//创建input的上下文
         List<HandlerDefinition> handlerDefinitions = inputDelegate.getHandlerDefinitions();
-        handlerDefinitions.stream().map(handlerDefinition -> buildFuture(handlerDefinition, filterDelegate, outputDelegate)).forEach(CompletableFuture::join);
+        return handlerDefinitions.stream().map(handlerDefinition -> buildFuture(handlerDefinition, filterDelegate, outputDelegate)).collect(Collectors.toList());
     }
 
     private Map readInput(HandlerDefinition input){
@@ -72,7 +75,7 @@ public class StandardHandlerExecutor implements HandlerExecutor {
         return events;
     }
 
-    private void doOutPut(DSLDelegate outputDelegate,List<Map> events){
+    private List<Map> doOutPut(DSLDelegate outputDelegate, List<Map> events){
         events.forEach(event->{
             outputDelegate.getClosure().call(event);
             for (HandlerDefinition handlerDefinition : outputDelegate.getHandlerDefinitions()) {
@@ -83,16 +86,12 @@ public class StandardHandlerExecutor implements HandlerExecutor {
                 }
             }
         });
+        return events;
     }
-    private CompletableFuture buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
+    private CompletableFuture<List<Map>> buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
         return CompletableFuture.supplyAsync(() -> readInput(input), executorService)
                 .thenApply(event -> doFilter(filterDelegate,event))
-                .thenAccept(events ->doOutPut(outputDelegate,events))
-                .whenComplete((v,e)->{
-                    if (e!=null)
-                        log.error("",e);
-                })
-                ;
+                .thenApply(events ->doOutPut(outputDelegate,events));
     }
 
     @Override

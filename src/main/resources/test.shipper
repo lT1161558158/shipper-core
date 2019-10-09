@@ -1,15 +1,22 @@
 input {
     //println "input 层"
-    StdInput {
+    StdInput2 {
         codec 'SimpleCodec'
         delimiter "\n"
+    }
+    SplitFilter {
+        field "message"
+        if (it['message']=='h,i')
+            terminator ','
+        else
+            terminator '@'
     }
 }
 
 filter {
 
 //    println "filter 层"
-    SplitFilter2 {
+    SplitFilter {
         field "message"
         if (it['message']=='h,i')
             terminator ','

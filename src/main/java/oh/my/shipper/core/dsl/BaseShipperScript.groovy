@@ -4,7 +4,6 @@ import oh.my.shipper.core.enums.HandlerEnums
 
 abstract class BaseShipperScript extends Script implements BaseShipper {
 
-    Map<HandlerEnums, DSLDelegate> handlerMap = [:]
 
     def dslParse(Closure closure, HandlerEnums handler) {
         def delegate = new DSLDelegate()
@@ -28,7 +27,6 @@ abstract class BaseShipperScript extends Script implements BaseShipper {
     @Override
     def output(Closure closure) {
         dslParse(closure, HandlerEnums.OUTPUT)
-        handlerExecutor.execute(handlerMap)
     }
 
 }

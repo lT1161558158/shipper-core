@@ -3,7 +3,9 @@ package oh.my.shipper.core.dsl
 import oh.my.shipper.core.api.Handler
 import oh.my.shipper.core.builder.HandlerBuilder
 
-
+/***
+ * 解析器的描述和代理类
+ */
 class HandlerDelegate {
     Handler handler
     Map<String,Object> otherProperties=[:]
