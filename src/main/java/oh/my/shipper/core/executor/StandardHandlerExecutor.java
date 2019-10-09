@@ -1,5 +1,6 @@
 package oh.my.shipper.core.executor;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import oh.my.shipper.core.api.Filter;
 import oh.my.shipper.core.api.Handler;
@@ -13,10 +14,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 @Slf4j
+@Data
 public class StandardHandlerExecutor implements HandlerExecutor {
 
+    private ExecutorService executorService;
+
+    public StandardHandlerExecutor(ExecutorService executorService) {
+        this.executorService = executorService;
+    }
 
     @Override
     public void execute(Map<HandlerEnums, DSLDelegate> dsls) {
@@ -41,14 +49,14 @@ public class StandardHandlerExecutor implements HandlerExecutor {
             input.getHandlerClosure().call();
             Handler inputHandler = input.getHandler();
             if (!(inputHandler instanceof Input))
-                return null;
+                return null;   
             return ((Input) inputHandler).read();
-        }).thenApply(event -> {
+        }, executorService).thenApply(event -> {
             List<Map> events = new ArrayList<>();
             events.add(event);
             if (filterDelegate == null)
                 return events;
-            filterDelegate.getClosure().call();
+            filterDelegate.getClosure().call(event);
             for (HandlerDefinition handlerDefinition : filterDelegate.getHandlerDefinitions()) {
                 Handler handler = handlerDefinition.getHandler();
                 if (handler instanceof Filter) {
@@ -62,17 +70,22 @@ public class StandardHandlerExecutor implements HandlerExecutor {
                 }
             }
             return events;
-        }).thenAccept(maps -> {
+        }).thenAccept(events -> {
             outputDelegate.getClosure().call();
             for (HandlerDefinition handlerDefinition : outputDelegate.getHandlerDefinitions()) {
                 Handler handler = handlerDefinition.getHandler();
                 if (handler instanceof Output) {
-                    maps.forEach(event -> {
+                    events.forEach(event -> {
                         handlerDefinition.getHandlerClosure().call(event);
                         ((Output) handler).write(event);
                     });
                 }
             }
         });
+    }
+
+    @Override
+    public void close() throws Exception {
+        executorService.shutdown();
     }
 }

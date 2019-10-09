@@ -1,8 +1,6 @@
 package oh.my.shipper.core.dsl
 
 import oh.my.shipper.core.enums.HandlerEnums
-import oh.my.shipper.core.executor.StandardHandlerExecutor
-
 
 abstract class BaseCollectorScript extends Script {
 
@@ -26,8 +24,7 @@ abstract class BaseCollectorScript extends Script {
 
     def output(Closure closure) {
         dslParse(closure,HandlerEnums.OUTPUT)
-        def executor = new StandardHandlerExecutor()
-        executor.execute(handlerMap)
+        handlerExecutor.execute(handlerMap)
     }
 
 }
