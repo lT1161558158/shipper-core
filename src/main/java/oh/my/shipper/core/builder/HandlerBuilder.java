@@ -38,11 +38,7 @@ public final class HandlerBuilder {
             Map<String, Class<Handler>> collect = allClass.stream()
                     .filter(c -> !ClassUtils.isChild(c, Handler.class))
                     .map(o->(Class<Handler>)o)
-                    .collect(
-                            Collectors.toMap(
-                                    org.springframework.util.ClassUtils::getShortName,
-                                    Function.identity()
-                            ));
+                    .collect(Collectors.toMap(Class::getSimpleName, Function.identity()));
             SIMPLE_NAME_CACHE.putAll(collect);
         }
     }
@@ -64,11 +60,8 @@ public final class HandlerBuilder {
      * @return
      */
     public Handler builderHandler(String name,Map<String,Object> args){
-        Class<Handler> handleByName = findHandleByName(name);
+        Handler handler = builderHandler(name);
         try{
-            Handler handler = handleByName.newInstance();
-            if (args==null)
-                return handler;
             Iterator<Map.Entry<String, Object>> iterator = args.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<String, Object> next = iterator.next();
