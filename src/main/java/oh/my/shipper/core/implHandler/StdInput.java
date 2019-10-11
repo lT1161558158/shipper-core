@@ -29,6 +29,8 @@ public class StdInput extends SimpleCodifiedHandler<String, Map> implements Inpu
 
     @Override
     public Map read(TimeUnit unit, long timeout) {
+        if (Objects.nonNull(delimiter))
+            scanner.useDelimiter(delimiter);//当delimiter不为空时,使用注入的delimiter
         long millis = timeout < 0 ? -1 : unit.toMicros(timeout);
         long counter = 0;
         while (!scanner.hasNext() && (millis < 0 || counter < millis)) {
@@ -41,8 +43,6 @@ public class StdInput extends SimpleCodifiedHandler<String, Map> implements Inpu
         }
         if (millis > 0 && counter >= millis)
             throw new ShipperException("timeout " + timeout + unit);
-        if (Objects.nonNull(delimiter))
-            scanner.useDelimiter(delimiter);//当delimiter不为空时,使用注入的delimiter
         return codec.codec(scanner.next());
     }
 
