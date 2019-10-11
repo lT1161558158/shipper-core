@@ -11,23 +11,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * stdio的input组件
  */
-@ToString(exclude = "scanner" )
-public class StdInput extends SimpleCodifiedHandler<String,Map> implements Input<String> {
+@ToString(exclude = "scanner")
+public class StdInput extends SimpleCodifiedHandler<String, Map> implements Input<String> {
     private Scanner scanner = new Scanner(System.in);
+    private AtomicBoolean open = new AtomicBoolean(true);
     /**
      * 元素分隔符
      */
     @Setter
     @Getter
-    private String delimiter;
+    private String delimiter = "\n";
 
     @Override
     public Map read(TimeUnit unit, long timeout) {
-        long millis = timeout < 0 ? -1 : unit.toMillis(timeout);
+        long millis = timeout < 0 ? -1 : unit.toMicros(timeout);
         long counter = 0;
         while (!scanner.hasNext() && (millis < 0 || counter < millis)) {
             counter++;
@@ -38,7 +40,7 @@ public class StdInput extends SimpleCodifiedHandler<String,Map> implements Input
             }
         }
         if (millis > 0 && counter >= millis)
-            throw new ShipperException("timeout " + unit + timeout);
+            throw new ShipperException("timeout " + timeout + unit);
         if (Objects.nonNull(delimiter))
             scanner.useDelimiter(delimiter);//当delimiter不为空时,使用注入的delimiter
         return codec.codec(scanner.next());
@@ -46,12 +48,13 @@ public class StdInput extends SimpleCodifiedHandler<String,Map> implements Input
 
     @Override
     public boolean ready() {
-        return true;
+        return open.get();
     }
 
     @Override
     public void close() {
         scanner.close();
+        open.set(false);
     }
 
 }
