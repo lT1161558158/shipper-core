@@ -20,10 +20,10 @@ public final class HandlerBuilder {
 
     /**
      * 加载Handler
-     * @throws IOException
+     * @throws IOException 加载时可能的异常
      */
     public void reLoadHandler() throws IOException {
-        Enumeration<URL> resources = HandlerBuilder.class.getClassLoader().getResources("META-INF/collector.factories");
+        Enumeration<URL> resources = HandlerBuilder.class.getClassLoader().getResources("META-INF/shipper.factories");
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             UrlResource resource = new UrlResource(url);
@@ -55,9 +55,9 @@ public final class HandlerBuilder {
     /**
      * args中可以找到属性的args将会被移除,并且设置进生成的handler对象中
      * 也就是说将会剩下一些 Handler 中未使用的属性
-     * @param name
-     * @param args
-     * @return
+     * @param name 处理器名字
+     * @param args 给处理器设置的参数
+     * @return 处理器的一个实例
      */
     public Handler builderHandler(String name,Map<String,Object> args){
         Handler handler = builderHandler(name);

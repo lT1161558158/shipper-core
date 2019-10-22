@@ -6,8 +6,8 @@ import oh.my.shipper.core.api.CodifiedHandler;
 
 /**
  *  一个简单的实现了codec的赋值的基类
- * @param <In>
- * @param <Out>
+ * @param <In> 输入类型
+ * @param <Out> 输出类型
  */
 public abstract class SimpleCodifiedHandler<In, Out> implements CodifiedHandler<In, Out> {
     @Getter
