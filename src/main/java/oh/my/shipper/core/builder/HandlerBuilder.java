@@ -4,10 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import oh.my.shipper.core.api.Handler;
 import oh.my.shipper.core.util.ClassUtils;
 import oh.my.shipper.core.util.PropertyUtil;
-import org.springframework.core.io.UrlResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,8 +25,10 @@ public final class HandlerBuilder {
         Enumeration<URL> resources = HandlerBuilder.class.getClassLoader().getResources("META-INF/shipper.factories");
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
-            UrlResource resource = new UrlResource(url);
-            Properties properties = PropertiesLoaderUtils.loadProperties(resource);
+            Properties properties = new Properties();
+            try(InputStream inputStream=url.openStream()){
+                properties.load(inputStream);
+            }
             String packageScan = properties.getProperty("handlerPackage");
             List<Class<?>> allClass = ClassUtils.getAllClass(packageScan);
             if (allClass==null){

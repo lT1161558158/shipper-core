@@ -108,7 +108,7 @@ public class ClassUtils {
     }
 
     public static boolean isChild(Class<?> clazz,Class<?> type){
-        Class<?>[] allInterfacesForClass = org.springframework.util.ClassUtils.getAllInterfacesForClass(clazz);
+        Class<?>[] allInterfacesForClass = clazz.getInterfaces();
         for (Class<?> interfacesForClass : allInterfacesForClass) {
             if (type.equals(interfacesForClass)){
                 return true;
