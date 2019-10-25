@@ -1,1 +1,3 @@
 rootProject.name = 'shipper'
+//编译groovy代码时采用 UTF-8
+
