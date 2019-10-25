@@ -2,9 +2,7 @@ package oh.my.shipper.core.task;
 
 import lombok.Builder;
 import lombok.Data;
-import oh.my.shipper.core.api.Filter;
-import oh.my.shipper.core.api.Input;
-import oh.my.shipper.core.api.Output;
+import oh.my.shipper.core.api.*;
 import oh.my.shipper.core.dsl.DSLDelegate;
 import oh.my.shipper.core.dsl.HandlerDefinition;
 import oh.my.shipper.core.exception.ShipperException;
@@ -20,15 +18,20 @@ public class StandardShipperTask implements ShipperTask, AutoCloseable {
     private HandlerDefinition<Input> input;
     private DSLDelegate<Filter> filterDelegate;
     private DSLDelegate<Output> outputDelegate;
-
+    private InputCodec<?> defaultInputCodec;
+    private OutCodec<?> defaultOutputCodec;
     @Override
     public String name() {
         return name;
     }
 
+    @SuppressWarnings("unchecked")
     private Map readInput(HandlerDefinition<Input> input) {
         input.getHandlerClosure().call();
         Input inputHandler = input.getHandler();
+        if (inputHandler.codec()==null){
+            inputHandler.codec(defaultInputCodec);
+        }
         return inputHandler.ready() ? inputHandler.read() : null;
     }
 
@@ -52,12 +55,17 @@ public class StandardShipperTask implements ShipperTask, AutoCloseable {
         return events;
     }
 
+    @SuppressWarnings("unchecked")
     private void doOutPut(DSLDelegate<Output> outputDelegate, List<Map> events) {
         events.forEach(event -> {
             outputDelegate.getClosure().call(event);
             outputDelegate.getHandlerDefinitions().forEach(handlerDefinition -> {
                 Output handler = handlerDefinition.getHandler();
+
                 handlerDefinition.getHandlerClosure().call(event);
+                if (handler.codec()==null){
+                    handler.codec(defaultOutputCodec);
+                }
                 if (handler.writeAble())
                     handler.write(event);
             });

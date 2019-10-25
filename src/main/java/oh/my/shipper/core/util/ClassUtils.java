@@ -23,7 +23,7 @@ public class ClassUtils {
             try {
                 list.add(Class.forName(className));
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException("load class from name failed:"+className+e.getMessage());
+//                throw new RuntimeException("load class from name failed:"+className+e.getMessage());
             }
         }
         return list;

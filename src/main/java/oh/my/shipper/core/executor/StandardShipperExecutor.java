@@ -6,14 +6,22 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import oh.my.shipper.core.builder.HandlerBuilder;
 import oh.my.shipper.core.builder.ShipperTaskBuilder;
+import oh.my.shipper.core.builder.StandardShipperTaskBuilder;
 import oh.my.shipper.core.dsl.BaseShipperScript;
 import oh.my.shipper.core.dsl.DSLDelegate;
 import oh.my.shipper.core.enums.HandlerEnums;
 import org.codehaus.groovy.control.CompilerConfiguration;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Data
@@ -22,15 +30,23 @@ public class StandardShipperExecutor implements ShipperExecutor {
     public static final String HANDLER_BUILDER_NAME = "handlerBuilder";
     public static final String HANDLER_EXECUTOR_NAME = "shipperTaskBuilder";
     public static final String HANDLER_MAP_NAME = "handlerMap";
-
     public static final String COMPLETABLE_FUTURE_NAME = "completableFuture";
 
     /**
-     * dsl 的基础定义类
+     * dsl 的基础定义类名
      */
     private String baseScript = DEFAULT_BASE_SCRIPT;
+    /**
+     * 处理器build工厂
+     */
     private HandlerBuilder handlerBuilder;
+    /**
+     * shipper task 的建造器
+     */
     private ShipperTaskBuilder shipperTaskBuilder;
+    /**
+     * 线程池
+     */
     private ExecutorService executorService;
 
 
@@ -59,7 +75,19 @@ public class StandardShipperExecutor implements ShipperExecutor {
     }
 
     public static void main(String[] args) throws Exception {
-
+        Stream<String> lines = new BufferedReader(new FileReader("C:\\work\\code\\java\\shipper\\src\\main\\resources\\test.shipper")).lines();
+        String dsl = lines.collect(Collectors.joining("\n"));
+        HandlerBuilder handlerBuilder = new HandlerBuilder();
+        handlerBuilder.reLoadHandler();
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler((t, e) -> log.error("shipper executor error", e));
+            return thread;
+        });
+        ShipperTaskBuilder ShipperTaskBuilder = new StandardShipperTaskBuilder();
+        try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(handlerBuilder, ShipperTaskBuilder, threadPoolExecutor)) {
+            standardShipperExecutor.execute(dsl);
+        }
     }
 
     @Override
