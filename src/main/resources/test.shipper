@@ -6,9 +6,9 @@ input {
         println "请输入任意内容,以回车结束"
         codec {
             $'SimpleCodec'
-            format "yyyy-MM-dd HH:mm"
+            format = "yyyy-MM-dd HH:mm"
         }
-        delimiter "\n"
+        delimiter="aaa"
     }
 }
 

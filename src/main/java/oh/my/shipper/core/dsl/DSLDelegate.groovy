@@ -28,7 +28,6 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
             }
         }
     }
-
     @Override
     String toString() {
         return "${this.class} [ handlerDefinitions :$handlerDefinitions]"

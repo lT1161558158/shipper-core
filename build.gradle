@@ -3,6 +3,7 @@ plugins {
 //    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
     id 'java'
     id 'groovy'
+    id 'maven'
 }
 
 group = 'oh.my'
@@ -41,7 +42,7 @@ dependencies {
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-core
     compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
 // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.28'
 

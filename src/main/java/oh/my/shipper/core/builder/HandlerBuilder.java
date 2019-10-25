@@ -22,7 +22,7 @@ public final class HandlerBuilder {
      * @throws IOException 加载时可能的异常
      */
     public void reLoadHandler() throws IOException {
-        Enumeration<URL> resources = HandlerBuilder.class.getClassLoader().getResources("META-INF/shipper.factories");
+        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources("META-INF/shipper.factories");
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             Properties properties = new Properties();
@@ -37,7 +37,7 @@ public final class HandlerBuilder {
             }
             @SuppressWarnings("unchecked")
             Map<String, Class<Handler>> collect = allClass.stream()
-                    .filter(c -> !ClassUtils.isChild(c, Handler.class))
+                    .filter(Handler.class::isAssignableFrom)
                     .map(o->(Class<Handler>)o)
                     .collect(Collectors.toMap(Class::getSimpleName, Function.identity()));
             SIMPLE_NAME_CACHE.putAll(collect);

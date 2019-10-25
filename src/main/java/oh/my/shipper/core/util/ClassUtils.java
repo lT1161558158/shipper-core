@@ -1,6 +1,7 @@
 package oh.my.shipper.core.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -33,14 +34,23 @@ public class ClassUtils {
      * @param packageName 包名
      * @return 包下的所有类
      */
-    public static List<String> getClassName(String packageName) {
-
-        List<String> fileNames = null;
+    public static List<String> getClassName(String packageName){
+        List<String> result=new ArrayList<>();
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         String packagePath = packageName.replace(".", "/");
-        URL url = loader.getResource(packagePath);
-        if (url==null)
-            return null;
+        Enumeration<URL> resources = null;
+        try {
+            resources = loader.getResources(packagePath);
+            while (resources.hasMoreElements()) {
+                result.addAll(getClassNme(resources.nextElement()));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("open package "+packagePath+" failed : "+e.getMessage());
+        }
+        return result;
+    }
+    public static List<String> getClassNme(URL url){
+        List<String> fileNames = null;
         String type = url.getProtocol();
         if (type.equals("file")) {
             String fileSearchPath = url.getPath();
@@ -108,12 +118,6 @@ public class ClassUtils {
     }
 
     public static boolean isChild(Class<?> clazz,Class<?> type){
-        Class<?>[] allInterfacesForClass = clazz.getInterfaces();
-        for (Class<?> interfacesForClass : allInterfacesForClass) {
-            if (type.equals(interfacesForClass)){
-                return true;
-            }
-        }
-        return false;
+        return type.isAssignableFrom(clazz);
     }
 }

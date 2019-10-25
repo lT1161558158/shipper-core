@@ -44,6 +44,8 @@ class HandlerDelegate {
     static def getArgs(Object arg){
         if (arg instanceof Object[]){
             return arg[0]
+        }else{
+            return arg
         }
     }
 }
