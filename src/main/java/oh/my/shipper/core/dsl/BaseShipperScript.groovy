@@ -2,6 +2,8 @@ package oh.my.shipper.core.dsl
 
 import oh.my.shipper.core.enums.HandlerEnums
 
+import java.text.SimpleDateFormat
+
 abstract class BaseShipperScript extends Script implements BaseShipper {
 
 
@@ -28,5 +30,13 @@ abstract class BaseShipperScript extends Script implements BaseShipper {
     def output(Closure closure) {
         dslParse(closure, HandlerEnums.OUTPUT)
     }
-
+    //////////////自定义函数
+    /**
+     *
+     * @param format 格式化戳
+     * @return 格式化后的当前时间
+     */
+    static def now(String format){
+        return new SimpleDateFormat(format).format(new Date())
+    }
 }

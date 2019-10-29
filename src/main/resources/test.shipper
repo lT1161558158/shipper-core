@@ -2,8 +2,9 @@
 input {
     //println "input 层"
     println "请输入任意内容,以回车结束"
-    StdInput {
 
+    StdInput {
+        println now( 'yyyy')
 //        codec {
 //            $'SimpleCodec'
 //            format = "yyyy-MM-dd HH:mm"

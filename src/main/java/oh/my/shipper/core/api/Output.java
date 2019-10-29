@@ -13,7 +13,9 @@ public interface Output<Out> extends CodifiedHandler<Map,Out> {
      *
      * @param event 写入一个事件
      */
-    void write(Map event);
+    default void write(Map event){
+        write(event,TimeUnit.MINUTES,-1);
+    }
 
     /**
      *
