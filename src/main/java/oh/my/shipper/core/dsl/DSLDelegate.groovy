@@ -10,9 +10,11 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
     long timeout = -1
 
     def methodMissing(String name, Object obj) {
+        if(!handlerDefinitions.empty)//第一次才执行创建 handlerDefinition
+            return
         Object[] args = obj
         for (arg in args) {
-            if (arg instanceof Closure && handlerDefinitions.empty) {//第一次才执行创建 handlerDefinition
+            if (arg instanceof Closure) {
                 def handler = handlerBuilder.builderHandler(name)
                 def definition = new HandlerDefinition()
                 Closure closure = arg

@@ -17,13 +17,4 @@ public class StdOutput extends SimpleCodifiedHandler<Map,String> implements Outp
         write(event);
     }
 
-    @Override
-    public boolean writeAble() {
-        return true;
-    }
-
-    @Override
-    public void close() {
-        //ignore
-    }
 }

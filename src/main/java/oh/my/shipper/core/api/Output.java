@@ -6,9 +6,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * 输出
  */
-public interface Output<Out> extends AutoCloseable, CodifiedHandler<Map,Out> {
+public interface Output<Out> extends CodifiedHandler<Map,Out> {
 
-//    void writeOut()
 
     /**
      *
@@ -24,9 +23,4 @@ public interface Output<Out> extends AutoCloseable, CodifiedHandler<Map,Out> {
      */
     void write(Map event, TimeUnit unit, long timeout);
 
-    /**
-     *
-     * @return 是否可写
-     */
-    boolean writeAble();
 }

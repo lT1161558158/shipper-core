@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * stdio的input组件
@@ -19,13 +18,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @ToString(exclude = "scanner")
 public class StdInput extends SimpleCodifiedHandler<String, Map> implements Input<String> {
     private Scanner scanner = new Scanner(System.in);
-    private AtomicBoolean open = new AtomicBoolean(true);
     /**
      * 元素分隔符
      */
     @Setter
     @Getter
     private String delimiter = "\n";
+
 
     @Override
     public Map read(TimeUnit unit, long timeout) {
@@ -45,17 +44,5 @@ public class StdInput extends SimpleCodifiedHandler<String, Map> implements Inpu
             throw new ShipperException("timeout " + timeout + unit);
         return codec.codec(scanner.next());
     }
-
-    @Override
-    public boolean ready() {
-        return open.get();
-    }
-
-    @Override
-    public void close() {
-        scanner.close();
-        open.set(false);
-    }
-
 
 }
