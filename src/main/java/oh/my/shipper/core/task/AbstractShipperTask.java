@@ -1,6 +1,7 @@
 package oh.my.shipper.core.task;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import oh.my.shipper.core.api.*;
 import oh.my.shipper.core.dsl.DSLDelegate;
 import oh.my.shipper.core.dsl.HandlerDefinition;
@@ -9,8 +10,7 @@ import oh.my.shipper.core.exception.ShipperException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
+@Slf4j
 @Data
 public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable {
     protected String name;
@@ -34,8 +34,11 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
         input.getHandlerClosure().call();
         Input handler = input.getHandler();
         doInit(handler);//初始化
-        if (handler.codec() == null)
+        if (handler.codec() == null){
             handler.codec(taskDefinition.getDefaultInputCodec());//设置默认的输入编码器
+            log.debug("use default input codec {}",handler.codec());
+        }
+
         return handler;
     }
     @SuppressWarnings("unchecked")
@@ -43,8 +46,11 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
         output.getHandlerClosure().call(event);
         Output handler = output.getHandler();
         doInit(handler);
-        if (handler.codec() == null)
+        if (handler.codec() == null){
             handler.codec(taskDefinition.getDefaultOutputCodec());
+            log.debug("use default output codec {}",handler.codec());
+        }
+
         return handler;
     }
 
@@ -85,7 +91,6 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
      * @param events         等待输出的事件
      */
     protected void doOutPut(DSLDelegate<Output> outputDelegate, List<Map> events) {
-        AtomicInteger counter=new AtomicInteger(0);
         events.forEach(event -> {
             outputDelegate.getClosure().call(event);
             outputDelegate.getHandlerDefinitions().forEach(handlerDefinition -> {
@@ -93,7 +98,6 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
                 if (output instanceof Recyclable && !((Recyclable) output).recyclable())
                     throw new ShipperException(output+" died");
                 output.write(event);
-                counter.incrementAndGet();
             });
         });
     }
