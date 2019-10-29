@@ -1,9 +1,6 @@
 package oh.my.shipper.core.builder
 
-import oh.my.shipper.core.api.InputCodec
-import oh.my.shipper.core.api.OutCodec
-import oh.my.shipper.core.api.Recyclable
-import oh.my.shipper.core.api.Scheduled
+import oh.my.shipper.core.api.*
 import oh.my.shipper.core.dsl.DSLDelegate
 import oh.my.shipper.core.dsl.HandlerDefinition
 import oh.my.shipper.core.enums.HandlerEnums
@@ -37,9 +34,10 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
                 .defaultOutputCodec(defaultOutputCodec)
                 .build()
         ShipperTask shipperTask
-        if (input instanceof Recyclable)
+        Handler handler=input.getHandler()
+        if (handler instanceof Recyclable)
             shipperTask = new StandardLoopShipperTask()
-        else if (input instanceof Scheduled)
+        else if (handler instanceof Scheduled)
             shipperTask = new StandardScheduleShipperTask()
         else
             shipperTask = new StandardSimpleShipperTask()
