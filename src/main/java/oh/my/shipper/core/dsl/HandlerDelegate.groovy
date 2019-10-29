@@ -6,9 +6,10 @@ import oh.my.shipper.core.builder.HandlerBuilder
 /***
  * 解析器的描述和代理类
  */
-class HandlerDelegate {
+class HandlerDelegate extends PropertiesDelegate {
     Handler handler
     HandlerBuilder handlerBuilder
+
 
     HandlerDelegate(Handler handler, HandlerBuilder handlerBuilder) {
         this.handler = handler
@@ -22,6 +23,8 @@ class HandlerDelegate {
     def propertyMissing(String name, Object value) {//代理无属性的setter方法
         if(handler.metaClass.hasProperty(handler,name))
             handler."$name"=getArgs(value)
+        else
+            super.propertyMissing(name,value)
     }
 
     def codec(String name){

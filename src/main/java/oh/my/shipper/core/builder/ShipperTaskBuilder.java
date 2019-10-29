@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.Map;
 
 public interface ShipperTaskBuilder {
-    List<Runnable> builderTask(Map<HandlerEnums, DSLDelegate> dsls);
+    List<Runnable> builderTask(Map<HandlerEnums, DSLDelegate> context);
 }

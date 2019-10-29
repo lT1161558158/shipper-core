@@ -2,14 +2,15 @@ package oh.my.shipper.core.builder
 
 import oh.my.shipper.core.api.InputCodec
 import oh.my.shipper.core.api.OutCodec
+import oh.my.shipper.core.api.Recyclable
+import oh.my.shipper.core.api.Scheduled
 import oh.my.shipper.core.dsl.DSLDelegate
 import oh.my.shipper.core.dsl.HandlerDefinition
 import oh.my.shipper.core.enums.HandlerEnums
 import oh.my.shipper.core.exception.ShipperException
 import oh.my.shipper.core.implHandler.codec.JsonCodec
 import oh.my.shipper.core.implHandler.codec.SimpleCodec
-import oh.my.shipper.core.task.ShipperTask
-import oh.my.shipper.core.task.StandardShipperTask
+import oh.my.shipper.core.task.*
 
 import java.util.stream.Collectors
 
@@ -28,20 +29,29 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
     }
 
     private ShipperTask buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
-        return StandardShipperTask.builder()
+        def taskDefinition = TaskDefinition.builder()
                 .input(input)
                 .filterDelegate(filterDelegate)
                 .outputDelegate(outputDelegate)
-                .name(input.getName())
                 .defaultInputCodec(defaultInputCodec)
                 .defaultOutputCodec(defaultOutputCodec)
                 .build()
+        ShipperTask shipperTask
+        if (input instanceof Recyclable)
+            shipperTask = new StandardLoopShipperTask()
+        else if (input instanceof Scheduled)
+            shipperTask = new StandardScheduleShipperTask()
+        else
+            shipperTask = new StandardSimpleShipperTask()
+        shipperTask.setTaskDefinition(taskDefinition)
+        //暂不设置名字
+        return shipperTask
     }
 
-    List<Runnable> builderTask(Map<HandlerEnums, DSLDelegate> dsls) {
-        DSLDelegate inputDelegate = dsls.get(HandlerEnums.INPUT)
-        DSLDelegate outputDelegate = dsls.get(HandlerEnums.OUTPUT)
-        DSLDelegate filterDelegate = dsls.get(HandlerEnums.FILTER)
+    List<Runnable> builderTask(Map<HandlerEnums, DSLDelegate> context) {
+        DSLDelegate inputDelegate = context.get(HandlerEnums.INPUT)
+        DSLDelegate outputDelegate = context.get(HandlerEnums.OUTPUT)
+        DSLDelegate filterDelegate = context.get(HandlerEnums.FILTER)
         if (outputDelegate == null)
             throw new ShipperException("at least one output must be provided")
         if (inputDelegate == null)
