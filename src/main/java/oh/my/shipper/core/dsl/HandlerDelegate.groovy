@@ -1,17 +1,17 @@
 package oh.my.shipper.core.dsl
 
 import oh.my.shipper.core.api.Handler
-import oh.my.shipper.core.builder.HandlerBuilder
+import oh.my.shipper.core.builder.StandardHandlerBuilder
 
 /***
  * 解析器的描述和代理类
  */
 class HandlerDelegate extends PropertiesDelegate {
     Handler handler
-    HandlerBuilder handlerBuilder
+    StandardHandlerBuilder handlerBuilder
 
 
-    HandlerDelegate(Handler handler, HandlerBuilder handlerBuilder) {
+    HandlerDelegate(Handler handler, StandardHandlerBuilder handlerBuilder) {
         this.handler = handler
         this.handlerBuilder = handlerBuilder
     }

@@ -7,7 +7,7 @@ public class StandardShipperExecutorTest {
     public void test() throws Exception {
 //        Stream<String> lines = new BufferedReader(new FileReader("C:\\work\\code\\java\\shipper\\src\\main\\resources\\test.shipper")).lines();
 //        String dsl = lines.collect(Collectors.joining("\n"));
-//        HandlerBuilder handlerBuilder = new HandlerBuilder();
+//        StandardHandlerBuilder handlerBuilder = new StandardHandlerBuilder();
 //        handlerBuilder.reLoadHandler();
 //        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), r -> {
 //            Thread thread = new Thread(r);
