@@ -13,12 +13,12 @@ import java.util.Map;
 @Slf4j
 @Data
 public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable {
-    protected String name;
     protected TaskDefinition taskDefinition;
 
+
     @Override
-    public String name() {
-        return name;
+    public void taskDefinition(TaskDefinition taskDefinition) {
+        this.taskDefinition=taskDefinition;
     }
 
     /**
@@ -69,13 +69,15 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
         events.add(event);
         if (filterDelegate == null)
             return events;
+        log.debug("do filter layer");
         filterDelegate.getClosure().call(event);
-        for (HandlerDefinition<Filter> handlerDefinition : filterDelegate.getHandlerDefinitions()) {
+        for (HandlerDefinition<Filter> handlerDefinition : filterDelegate.getHandlerDefinitions().values()) {
             Filter handler = handlerDefinition.getHandler();
             doInit(handler);//初始化
             List<Map> newListEvents = new ArrayList<>();
             events.forEach(aEvent -> {
                 handlerDefinition.getHandlerClosure().call(aEvent);
+                log.debug("do filter {}",handler);
                 List<Map> newEvents = handler.filter(aEvent);
                 newListEvents.addAll(newEvents);
             });
@@ -92,9 +94,11 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
      */
     protected void doOutPut(DSLDelegate<Output> outputDelegate, List<Map> events) {
         events.forEach(event -> {
+            log.debug("do output layer");
             outputDelegate.getClosure().call(event);
-            outputDelegate.getHandlerDefinitions().forEach(handlerDefinition -> {
-                Output output = initOutPut(handlerDefinition, event);
+            outputDelegate.getHandlerDefinitions().forEach((k,v) -> {
+                Output output = initOutPut(v, event);
+                log.debug("do output {}",output);
                 if (output instanceof Recyclable && !((Recyclable) output).recyclable())
                     throw new ShipperException(output+" died");
                 output.write(event);
@@ -126,7 +130,7 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable 
             throw new ShipperException("close input ", e);
         }
         Exception e = null;
-        for (HandlerDefinition<Output> handlerDefinition : taskDefinition.getOutputDelegate().getHandlerDefinitions()) {//将尽可能的多关闭资源,以免发生比较严重的资源泄露
+        for (HandlerDefinition<Output> handlerDefinition : taskDefinition.getOutputDelegate().getHandlerDefinitions().values()) {//将尽可能的多关闭资源,以免发生比较严重的资源泄露
             Output handler = handlerDefinition.getHandler();
             if (handler instanceof AutoCloseable) {
                 try {

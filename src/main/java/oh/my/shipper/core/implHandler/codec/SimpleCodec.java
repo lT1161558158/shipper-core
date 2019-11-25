@@ -11,6 +11,11 @@ import java.util.Map;
 import static oh.my.shipper.core.event.Event.MESSAGE;
 import static oh.my.shipper.core.event.Event.TIMESTAMP;
 
+/**
+ * 添加一个时间filed发编码器
+ * 使用 format 变量进行时间格式化
+ * 若使用了错误的格式化则会使用默认的format yyyy-MM-dd HH:mm:ss
+ */
 @Data
 public class SimpleCodec implements InputCodec<String> {
     private static final String DEFAULT_FORMAT = "yyyy-MM-dd HH:mm:ss";

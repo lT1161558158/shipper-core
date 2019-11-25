@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public final class HandlerBuilder {
+
     private final Map<String,Class<Handler>> SIMPLE_NAME_CACHE=new ConcurrentHashMap<>();
 
     /**

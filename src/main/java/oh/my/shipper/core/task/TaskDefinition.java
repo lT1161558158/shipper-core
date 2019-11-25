@@ -5,6 +5,11 @@ import lombok.Data;
 import oh.my.shipper.core.api.*;
 import oh.my.shipper.core.dsl.DSLDelegate;
 import oh.my.shipper.core.dsl.HandlerDefinition;
+
+/**
+ * task的描述信息
+ * {@link ShipperTask}
+ */
 @Data
 @Builder
 public class TaskDefinition {

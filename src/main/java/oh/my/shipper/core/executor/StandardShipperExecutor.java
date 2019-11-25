@@ -1,21 +1,14 @@
 package oh.my.shipper.core.executor;
 
 
-import groovy.lang.GroovyShell;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import oh.my.shipper.core.builder.HandlerBuilder;
-import oh.my.shipper.core.builder.ShipperTaskBuilder;
-import oh.my.shipper.core.builder.StandardShipperTaskBuilder;
-import oh.my.shipper.core.dsl.BaseShipperScript;
-import oh.my.shipper.core.dsl.DSLDelegate;
-import oh.my.shipper.core.enums.HandlerEnums;
-import org.codehaus.groovy.control.CompilerConfiguration;
+import oh.my.shipper.core.builder.*;
+import oh.my.shipper.core.task.ShipperTaskFuture;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -26,20 +19,9 @@ import java.util.stream.Stream;
 @Slf4j
 @Data
 public class StandardShipperExecutor implements ShipperExecutor {
-    public static final String DEFAULT_BASE_SCRIPT = BaseShipperScript.class.getName();
-    public static final String HANDLER_BUILDER_NAME = "handlerBuilder";
-    public static final String HANDLER_EXECUTOR_NAME = "shipperTaskBuilder";
-    public static final String HANDLER_MAP_NAME = "handlerMap";
-    public static final String COMPLETABLE_FUTURE_NAME = "completableFuture";
 
-    /**
-     * dsl 的基础定义类名
-     */
-    private String baseScript = DEFAULT_BASE_SCRIPT;
-    /**
-     * 处理器build工厂
-     */
-    private HandlerBuilder handlerBuilder;
+
+
     /**
      * shipper task 的建造器
      */
@@ -49,30 +31,32 @@ public class StandardShipperExecutor implements ShipperExecutor {
      */
     private ExecutorService executorService;
 
+    /**
+     * 对shipper的 建造器
+     */
+    private ShipperBuilder shipperBuilder;
 
-    public StandardShipperExecutor(HandlerBuilder handlerBuilder, ShipperTaskBuilder shipperTaskBuilder, ExecutorService executorService) {
-        this.handlerBuilder = handlerBuilder;
+    public StandardShipperExecutor(ShipperBuilder shipperBuilder,ShipperTaskBuilder shipperTaskBuilder, ExecutorService executorService) {
         this.shipperTaskBuilder = shipperTaskBuilder;
         this.executorService = executorService;
+        this.shipperBuilder = shipperBuilder;
     }
 
     @Override
     public void execute(String dsl) {
-        shipperTaskBuilder.builderTask(buildHandlerMap(dsl)).forEach(executorService::execute);
+        submit(dsl);
+    }
+
+    @Override
+    public List<ShipperTaskFuture> submit(String dsl) {
+        return shipperTaskBuilder
+                .build(shipperBuilder.build(dsl))
+                .stream()
+                .map(task->new ShipperTaskFuture<>(task,executorService.submit(task)))
+                .collect(Collectors.toList());
     }
 
 
-    private Map<HandlerEnums, DSLDelegate> buildHandlerMap(String dsl) {
-        Map<HandlerEnums, DSLDelegate> handlerMap = new HashMap<>();
-        CompilerConfiguration compilerConfiguration = new CompilerConfiguration();
-        compilerConfiguration.setScriptBaseClass(baseScript);
-        GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        groovyShell.setVariable(HANDLER_BUILDER_NAME, handlerBuilder);
-        groovyShell.setVariable(HANDLER_EXECUTOR_NAME, shipperTaskBuilder);
-        groovyShell.setVariable(HANDLER_MAP_NAME, handlerMap);
-        groovyShell.evaluate(dsl);
-        return handlerMap;
-    }
 
     public static void main(String[] args) throws Exception {
         Stream<String> lines = new BufferedReader(new FileReader("C:\\work\\code\\java\\shipper\\src\\main\\resources\\test.shipper")).lines();
@@ -84,8 +68,9 @@ public class StandardShipperExecutor implements ShipperExecutor {
             thread.setUncaughtExceptionHandler((t, e) -> log.error("shipper executor error", e));
             return thread;
         });
-        ShipperTaskBuilder ShipperTaskBuilder = new StandardShipperTaskBuilder();
-        try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(handlerBuilder, ShipperTaskBuilder, threadPoolExecutor)) {
+        ShipperBuilder shipperBuilder=new StandardShipperBuilder(handlerBuilder);
+        ShipperTaskBuilder shipperTaskBuilder = new StandardShipperTaskBuilder();
+        try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(shipperBuilder, shipperTaskBuilder, threadPoolExecutor)) {
             standardShipperExecutor.execute(dsl);
         }
     }
