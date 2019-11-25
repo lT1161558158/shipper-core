@@ -23,9 +23,9 @@ public class StandardShipperBuilder implements ShipperBuilder {
     /**
      * 处理器build工厂
      */
-    private StandardHandlerBuilder standardHandlerBuilder;
+    private HandlerBuilder standardHandlerBuilder;
 
-    public StandardShipperBuilder(StandardHandlerBuilder standardHandlerBuilder) {
+    public StandardShipperBuilder(HandlerBuilder standardHandlerBuilder) {
         this.standardHandlerBuilder = standardHandlerBuilder;
     }
 
