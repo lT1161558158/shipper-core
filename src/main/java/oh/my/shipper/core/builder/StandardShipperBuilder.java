@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class StandardShipperBuilder implements ShipperBuilder {
     public static final String DEFAULT_BASE_SCRIPT = BaseShipperScript.class.getName();
-    public static final String HANDLER_BUILDER_NAME = "standardHandlerBuilder";
+    public static final String HANDLER_BUILDER_NAME = "handlerBuilder";
     public static final String HANDLER_EXECUTOR_NAME = "shipperTaskBuilder";
     public static final String HANDLER_MAP_NAME = "handlerMap";
     public static final String COMPLETABLE_FUTURE_NAME = "completableFuture";
