@@ -14,12 +14,12 @@ cat randdata | awk '{print $2}' | sort | uniq -c
 实际上的流转为
 
 ```shell
-input|codc|filter|codc|output
+input|[codc]|[filter]|[codc]|[output]
 ```
 
 shipper是用不同的**Handler**来实现这些的,默认情况下是使用**串行**来执行这些操作,但也可以通过**扩展**的方式来实现为广播事件并分配到不同的线程来执行,或者其他任意的方式.
 
-shipper会给事件附加一些额外信息.例如**@timestamp**,**@version**等,一般来说,形如**@xx**格式的filed是组件附加的额外信息.如果试图自行添加一个**@xx**格式的filed,shipper会报告一个错误,并且会根据执行器的不同来决定是否忽略这个非法的filed或者直接拒绝执行这个filed.一般来说是直接拒绝执行,因为这不符合预期.
+shipper会给事件附加一些额外信息.例如**@timestamp**,**@version**等,一般来说,形如**@xx**格式的filed是组件附加的额外信息.如果试图自行添加一个**@xx**格式的filed,shipper会报告一个错误,并且会根据执行器的不同来决定是否忽略这个非法的filed或者直接拒绝执行这个filed.一般来说是直接拒绝执行,因为这不符合预期(暂未实现).
 
 所有的**handler**都支持4个方法,方法会在**成功时执行**.(暂未实现)
 
@@ -53,8 +53,6 @@ input{
 实际上input域中只有input的插件才会生效,其他域也类似
 
 #### 外部域
-
-在{}外部可以直接定义一些值,但这些定义的值一般仅作为被引用的内容
 
 #### codec
 codec的配置比较特殊
@@ -93,7 +91,7 @@ Stdin {
 
 实际上类似于`StdIn`和`SimpleCodec`这样的名字就是类的名字.
 
-这里也隐含了一个条件,编写的类名字不能够相同.
+这里也隐含了一个条件,编写的插件类名字不能够相同.
 
 #### 数据类型
 
@@ -133,7 +131,7 @@ event的处理过程可能如下
 input|codc|filter1|filter2|codc|output
 ```
 
-实际上由input产生的"事件",实际上应该称为一个匿名事件,它是一个原始的数据段,还没有为这个段绑定任何的名字,自然也无法在其他位置使用这个数据段.只有经过了至少一个`codc`后,这个数据段才是一个可以被访问的事件.
+实际上由input产生的"事件",实际上应该称为一个匿名事件,它是一个原始的数据段,还没有为这个段绑定任何的名字,自然也无法在其他位置使用这个数据段.只有经过了至少一个`codec`后,这个数据段才是一个可以被访问的事件.
 
 这里也隐含了一个特殊条件,那就是最简单的一个完整的`shipper`只需要一个`input`和一个`output`即可.输入数据段然后输出数据段.中间不进行任何操作.
 
@@ -155,7 +153,7 @@ if (it['type'] == "web") {
 }
 ```
 
-**要注意的是,在input中无法访问`event`(实际上是在codec后才能访问),仅能在`filter`或者`output`中访问event,并且访问event的动作将先于`filter`或者`output`的执行.**
+**要注意的是,在input中无法访问`event`(实际上是在codec后才能访问),仅能在`filter`或者`output`中访问event,并且访问event的动作将先于`filter`或者`output`的初始化.也就是说可以按照event的情况来初始化filter或output**
 
 ##### 外部引用
 
@@ -177,9 +175,11 @@ filter{
 }
 ```
 
+不建议这么做,域中值的范围根据不同的实现可以是不同的
+
 ##### 内部引用
 
-可以访问在其他域中定义的值
+可以访问在当前域中定义的值
 
 **要注意的是,只能向前引用(实际上event引用也遵循了这个原则),必须先说明是什么,然后才能使用**
 
@@ -193,30 +193,37 @@ filter{
 
 主入口是`ShipperExecutor`接口
 
-该接口提供一个方法可供使用
+该接口提供两个方法可供使用
 
 ```java
 void executor(String dsl);
+List<ShipperTaskFuture> submit(String dsl);
 ```
 
 参数为dsl字符串
 
-这个函数可能抛出`ShipperException`
+函数可能抛出`ShipperException`
+
+使用方式和`Executor`类似,实际上内部是使用了executor的代理
 
 一个标准的使用方式如下
 
 ```java
-HandlerBuilder handlerBuilder = new HandlerBuilder();
-handlerBuilder.reLoadHandler();
-ShipperTaskBuilder ShipperTaskBuilder = new StandardShipperTaskBuilder();
-try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(handlerBuilder, ShipperTaskBuilder,threadPoolExecutor)) {
+HandlerBuilder standardHandlerBuilder = new HandlerBuilder();
+standardHandlerBuilder.reLoadHandler();
+ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), r -> {
+    Thread thread = new Thread(r);
+    thread.setUncaughtExceptionHandler((t, e) -> log.error("shipper executor error", e));
+    return thread;
+});
+ShipperBuilder shipperBuilder=new StandardShipperBuilder(standardHandlerBuilder);
+ShipperTaskBuilder shipperTaskBuilder = new StandardShipperTaskBuilder();
+try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(shipperBuilder, shipperTaskBuilder, threadPoolExecutor)) {
     standardShipperExecutor.execute(dsl);
-} catch (RuntimeException e) {
-    log.error("dsl error [{}]", e.getMessage());
 }
 ```
 
-该接口实现了`AutoClosed`接口,作用为关闭传入的`threadPoolExecutor`
+该接口实现了`AutoClosed`接口,会关闭相关资源
 
 由上可知基本的使用方式如下
 
