@@ -4,20 +4,22 @@ plugins {
     id 'java'
     id 'groovy'
     id 'maven'
+    id 'maven-publish'
 }
 
-group = 'oh.my'
+group = 'top.trister'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
 
 sourceSets {
     main{
-        groovy{
-            srcDirs=["src/main/groovy","src/main/java"]
-        }
         java{
             srcDirs=[]
         }
+        groovy{
+            srcDirs=["src/main/groovy","src/main/java"]
+        }
+
     }
 }
 configurations {
@@ -53,5 +55,21 @@ tasks.withType(GroovyCompile) {
 //编译JAVA文件时采用UTF-8
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
+}
+def localMavenRepo = 'file://' + new File(System.getenv("GRADLE_USER_HOME")).absolutePath
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: localMavenRepo)
+
+            //构造项目的Pom文件
+            pom.project {
+                name = project.name
+                packaging = 'jar'
+                description = 'description'
+            }
+        }
+
+    }
 }
 

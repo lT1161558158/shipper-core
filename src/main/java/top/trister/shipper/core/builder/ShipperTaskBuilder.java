@@ -1,0 +1,10 @@
+package top.trister.shipper.core.builder;
+
+import top.trister.shipper.core.bean.Shipper;
+import top.trister.shipper.core.task.ShipperTask;
+
+import java.util.List;
+
+public interface ShipperTaskBuilder {
+    List<ShipperTask> build(Shipper shipper);
+}
