@@ -12,10 +12,10 @@ import top.trister.shipper.core.dsl.HandlerDefinition;
  */
 @Data
 @Builder
-public class TaskDefinition {
-    HandlerDefinition<Input> input;
-    DSLDelegate<Filter> filterDelegate;
-    DSLDelegate<Output> outputDelegate;
-    InputCodec<?> defaultInputCodec;
-    OutCodec<?> defaultOutputCodec;
+public class ShipperTaskContext {
+    final HandlerDefinition<Input> input;
+    final DSLDelegate<Filter> filterDelegate;
+    final DSLDelegate<Output> outputDelegate;
+    final InputCodec<?> defaultInputCodec;
+    final OutCodec<?> defaultOutputCodec;
 }

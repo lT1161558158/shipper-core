@@ -30,6 +30,9 @@ abstract class BaseShipperScript extends Script implements BaseShipper {
     def output(Closure closure) {
         dslParse(closure, HandlerEnums.OUTPUT)
     }
+    def cron(Closure closure){
+
+    }
     //////////////自定义函数
     /**
      *

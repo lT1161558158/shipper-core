@@ -12,17 +12,14 @@ import top.trister.shipper.core.exception.ShipperException;
 @Data
 public class StandardLoopShipperTask extends StandardSimpleShipperTask implements LoopShipperTask {
 
-    boolean loop;
-    Recyclable recyclable;
+    private Recyclable recyclable;
+
     @Override
     protected Input initInput(HandlerDefinition<Input> input) {
         Input handler = super.initInput(input);
-        if (handler instanceof Recyclable){
-            recyclable=(Recyclable) handler;
-            loop = recyclable.recyclable();
-        }
-        else
+        if (!(handler instanceof Recyclable))
             throw new ShipperException("input " + handler.getClass().getSimpleName() + " is not " + Recyclable.class.getSimpleName());
+        recyclable = (Recyclable) handler;
         return handler;
     }
 
@@ -34,6 +31,6 @@ public class StandardLoopShipperTask extends StandardSimpleShipperTask implement
 
     @Override
     public boolean loop() {
-        return loop;
+        return recyclable.recyclable();
     }
 }

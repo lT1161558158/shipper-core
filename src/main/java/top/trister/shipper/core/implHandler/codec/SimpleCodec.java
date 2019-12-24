@@ -28,13 +28,14 @@ public class SimpleCodec implements InputCodec<String> {
         event.put(MESSAGE, input);
         return event;
     }
-    private SimpleDateFormat builderFormat(){
+
+    private SimpleDateFormat builderFormat() {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat();
-        try{
+        try {
             simpleDateFormat.applyPattern(format);
-        }catch (Exception ignore){
+        } catch (Exception ignore) {
             simpleDateFormat.applyPattern(DEFAULT_FORMAT);
-            format=DEFAULT_FORMAT;
+            format = DEFAULT_FORMAT;
         }
         return simpleDateFormat;
     }

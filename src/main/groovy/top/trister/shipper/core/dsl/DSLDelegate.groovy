@@ -8,7 +8,6 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
     Map<String,HandlerDefinition<T>> handlerDefinitions=[:]
     Closure closure
     HandlerBuilder handlerBuilder
-    long timeout = -1
 
     def methodMissing(String name, Object obj) {
         Object[] args = obj

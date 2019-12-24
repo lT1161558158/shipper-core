@@ -44,7 +44,7 @@ public final class StandardHandlerBuilder implements HandlerBuilder {
             String packageScan = properties.getProperty("handlerPackage");
             List<Class<?>> allClass = ClassUtils.getAllClass(packageScan);
             if (allClass == null) {
-                log.error("not find any class of {}", packageScan);
+                log.warn("not find any class of {}", packageScan);
                 continue;
             }
             @SuppressWarnings("unchecked")

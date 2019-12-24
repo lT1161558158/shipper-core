@@ -16,7 +16,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import top.trister.shipper.core.factories.TaskFactory
 import top.trister.shipper.core.task.ShipperTask
-import top.trister.shipper.core.task.TaskDefinition
+import top.trister.shipper.core.task.ShipperTaskContext
 
 import java.util.stream.Collectors
 
@@ -37,8 +37,8 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         defaultOutputCodec = new JsonCodec()
     }
 
-    private ShipperTask buildFuture(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
-        def taskDefinition = TaskDefinition.builder()
+    private ShipperTask buildTask(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
+        def shipperTaskContext = ShipperTaskContext.builder()
                 .input(input)
                 .filterDelegate(filterDelegate)
                 .outputDelegate(outputDelegate)
@@ -49,7 +49,7 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         TaskImplStory taskImplStory = taskFactory.findStory(handler.class)
         ShipperTask shipperTask = taskImplStory.taskImplClazz.newInstance()
         log.debug("build {}", taskImplStory.taskImplClazz)
-        shipperTask.taskDefinition(taskDefinition)
+        shipperTask.shipperTaskContext(shipperTaskContext)
         return shipperTask
     }
 
@@ -66,7 +66,7 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         inputDelegate.getClosure().call()//创建input的上下文
         Map<String, HandlerDefinition> handlerDefinitions = inputDelegate.getHandlerDefinitions()
         return handlerDefinitions.values().stream()
-                .map({ e -> buildFuture(e, filterDelegate, outputDelegate) })
+                .map({ e -> buildTask(e, filterDelegate, outputDelegate) })
                 .collect(Collectors.toList())
     }
 }
