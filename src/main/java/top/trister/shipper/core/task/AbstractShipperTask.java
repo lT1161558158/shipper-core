@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import top.trister.shipper.core.api.*;
 import top.trister.shipper.core.dsl.DSLDelegate;
 import top.trister.shipper.core.dsl.HandlerDefinition;
+import top.trister.shipper.core.exception.MultipleException;
 import top.trister.shipper.core.exception.ShipperException;
 
 import java.util.ArrayList;
@@ -64,6 +65,10 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         return Collections.unmodifiableList(events);
     }
 
+    @Override
+    public ShipperTaskContext ShipperTaskContext() {
+        return shipperTaskContext;
+    }
 
     //初始化部分
     @SuppressWarnings("unchecked")
@@ -200,8 +205,9 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
 
     protected abstract void doSomething() throws InterruptedException;
 
+
     @Override
-    public void run() {
+    public ShipperTask call() throws Exception {
         try {
             taskInit();
             doSomething();
@@ -210,6 +216,9 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         } finally {
             close();
         }
+        if (!exceptions.isEmpty())
+            throw new MultipleException(exceptions);
+        return this;
     }
 
     @Override

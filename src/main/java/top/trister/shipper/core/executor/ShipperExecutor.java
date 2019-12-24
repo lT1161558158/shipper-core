@@ -1,8 +1,9 @@
 package top.trister.shipper.core.executor;
 
-import top.trister.shipper.core.task.ShipperTaskFuture;
+import top.trister.shipper.core.task.ShipperTask;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * shipper的执行器
@@ -19,5 +20,5 @@ public interface ShipperExecutor extends AutoCloseable {
      * @param dsl dsl
      * @return 执行中的future
      */
-    List<ShipperTaskFuture> submit(String dsl);
+    List<CompletableFuture<ShipperTask>> submit(String dsl);
 }

@@ -1,8 +1,7 @@
 package top.trister.shipper.core.exception;
 
 public class ShipperException extends RuntimeException {
-    public ShipperException() {
-    }
+    public ShipperException() { }
 
     public ShipperException(String message) {
         super(message);
@@ -19,4 +18,5 @@ public class ShipperException extends RuntimeException {
     public ShipperException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
+
 }

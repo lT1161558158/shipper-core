@@ -4,7 +4,7 @@ package top.trister.shipper.core.executor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import top.trister.shipper.core.builder.*;
-import top.trister.shipper.core.task.ShipperTaskFuture;
+import top.trister.shipper.core.task.ShipperTask;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 @Slf4j
 @Data
 public class StandardShipperExecutor implements ShipperExecutor {
-
 
 
     /**
@@ -33,27 +32,25 @@ public class StandardShipperExecutor implements ShipperExecutor {
      */
     private ShipperBuilder shipperBuilder;
 
-    public StandardShipperExecutor(ShipperBuilder shipperBuilder,ShipperTaskBuilder shipperTaskBuilder, ExecutorService executorService) {
+    public StandardShipperExecutor(ShipperBuilder shipperBuilder, ShipperTaskBuilder shipperTaskBuilder, ExecutorService executorService) {
         this.shipperTaskBuilder = shipperTaskBuilder;
         this.executorService = executorService;
         this.shipperBuilder = shipperBuilder;
     }
 
     @Override
-    public void execute(String dsl) {
-        submit(dsl);
+    public void execute(String shipper) {
+        submit(shipper);
     }
 
     @Override
-    public List<ShipperTaskFuture> submit(String dsl) {
-
+    public List<CompletableFuture<ShipperTask>> submit(String shipper) {
         return shipperTaskBuilder
-                .build(shipperBuilder.build(dsl))
+                .build(shipperBuilder.build(shipper))
                 .stream()
-                .map(task->new ShipperTaskFuture<>(task,executorService.submit(task)))
+                .map(t -> CompletableFuture.supplyAsync(t::doing, executorService))
                 .collect(Collectors.toList());
     }
-
 
 
     public static void main(String[] args) throws Exception {
@@ -66,7 +63,7 @@ public class StandardShipperExecutor implements ShipperExecutor {
             thread.setUncaughtExceptionHandler((t, e) -> log.error("shipper executor error", e));
             return thread;
         });
-        ShipperBuilder shipperBuilder=new StandardShipperBuilder(standardHandlerBuilder);
+        ShipperBuilder shipperBuilder = new StandardShipperBuilder(standardHandlerBuilder);
         ShipperTaskBuilder shipperTaskBuilder = new StandardShipperTaskBuilder();
         try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(shipperBuilder, shipperTaskBuilder, threadPoolExecutor)) {
             standardShipperExecutor.execute(dsl);
@@ -77,4 +74,6 @@ public class StandardShipperExecutor implements ShipperExecutor {
     public void close() throws Exception {
         executorService.shutdown();
     }
+
+
 }
