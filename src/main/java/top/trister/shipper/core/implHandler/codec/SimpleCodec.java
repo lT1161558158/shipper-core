@@ -17,7 +17,7 @@ import static top.trister.shipper.core.event.Event.TIMESTAMP;
  * 若使用了错误的格式化则会使用默认的format yyyy-MM-dd HH:mm:ss
  */
 @Data
-public class SimpleCodec implements Codec<String, Map> {
+public class SimpleCodec implements Codec<Object, Map> {
     private static final String DEFAULT_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private String format = DEFAULT_FORMAT;
 
@@ -33,7 +33,7 @@ public class SimpleCodec implements Codec<String, Map> {
     }
 
     @Override
-    public Map codec(String input) {
+    public Map codec(Object input) {
         Map<Object, Object> event = new HashMap<>();
         event.put(TIMESTAMP, builderFormat().format(new Date()));
         event.put(MESSAGE, input);

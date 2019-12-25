@@ -1,7 +1,7 @@
 input{
 
     IdentityInput{
-        identity "123"
+        identity 666
     }
 }
 output{
