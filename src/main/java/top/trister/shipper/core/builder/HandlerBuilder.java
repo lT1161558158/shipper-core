@@ -1,6 +1,6 @@
 package top.trister.shipper.core.builder;
 
-import top.trister.shipper.core.api.Handler;
+import top.trister.shipper.core.api.handler.Handler;
 
 public interface HandlerBuilder {
     /**

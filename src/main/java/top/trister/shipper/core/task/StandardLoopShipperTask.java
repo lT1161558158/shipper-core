@@ -2,7 +2,7 @@ package top.trister.shipper.core.task;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import top.trister.shipper.core.api.Input;
+import top.trister.shipper.core.api.handler.input.Input;
 import top.trister.shipper.core.api.Recyclable;
 import top.trister.shipper.core.dsl.HandlerDefinition;
 import top.trister.shipper.core.exception.ShipperException;

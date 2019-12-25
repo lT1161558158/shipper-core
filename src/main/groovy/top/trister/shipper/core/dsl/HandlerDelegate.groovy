@@ -1,6 +1,6 @@
 package top.trister.shipper.core.dsl
 
-import top.trister.shipper.core.api.Handler
+import top.trister.shipper.core.api.handler.Handler
 import top.trister.shipper.core.builder.HandlerBuilder
 
 /***

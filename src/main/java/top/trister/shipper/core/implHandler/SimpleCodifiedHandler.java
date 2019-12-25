@@ -1,15 +1,17 @@
 package top.trister.shipper.core.implHandler;
 
+import lombok.Data;
 import lombok.Getter;
-import top.trister.shipper.core.api.Codec;
-import top.trister.shipper.core.api.CodifiedHandler;
+import top.trister.shipper.core.api.handler.codec.Codec;
+import top.trister.shipper.core.api.handler.CodifiedHandler;
 
 /**
  *  一个简单的实现了codec的赋值的基类
  * @param <In> 输入类型
  * @param <Out> 输出类型
  */
-public abstract class SimpleCodifiedHandler<In, Out> implements CodifiedHandler<In, Out> {
+@Data
+public class SimpleCodifiedHandler<In, Out> implements CodifiedHandler<In, Out> {
     @Getter
     protected Codec<In, Out> codec;
     @Override

@@ -1,4 +1,4 @@
-package top.trister.shipper.core.api;
+package top.trister.shipper.core.api.handler;
 
 /**
  * 标记为处理器

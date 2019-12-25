@@ -4,6 +4,7 @@ package top.trister.shipper.core.executor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import top.trister.shipper.core.builder.*;
+import top.trister.shipper.core.exception.MultipleException;
 import top.trister.shipper.core.task.ShipperTask;
 
 import java.io.BufferedReader;
@@ -66,7 +67,19 @@ public class StandardShipperExecutor implements ShipperExecutor {
         ShipperBuilder shipperBuilder = new StandardShipperBuilder(standardHandlerBuilder);
         ShipperTaskBuilder shipperTaskBuilder = new StandardShipperTaskBuilder();
         try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(shipperBuilder, shipperTaskBuilder, threadPoolExecutor)) {
-            standardShipperExecutor.execute(dsl);
+            List<CompletableFuture<ShipperTask>> submit = standardShipperExecutor.submit(dsl);
+            CompletableFuture<Void> voidCompletableFuture = CompletableFuture.allOf(submit.toArray(new CompletableFuture[0]));
+            voidCompletableFuture.whenComplete((v,e)->{
+                voidCompletableFuture.completeExceptionally(e);
+            });
+            try{
+                voidCompletableFuture.join();
+            }catch (Exception e){
+                Throwable cause = e.getCause();
+                if (cause instanceof MultipleException)
+                    System.out.println(((MultipleException) cause).getExceptions());
+            }
+
         }
     }
 

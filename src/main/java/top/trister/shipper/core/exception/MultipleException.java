@@ -11,4 +11,9 @@ public class MultipleException extends ShipperException {
     public MultipleException(List<Exception> exceptions) {
         this.exceptions = exceptions;
     }
+
+    public MultipleException(String message, List<Exception> exceptions) {
+        super(message);
+        this.exceptions = exceptions;
+    }
 }

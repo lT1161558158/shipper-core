@@ -1,7 +1,7 @@
 package top.trister.shipper.core.builder;
 
 import lombok.extern.slf4j.Slf4j;
-import top.trister.shipper.core.api.Handler;
+import top.trister.shipper.core.api.handler.Handler;
 import top.trister.shipper.core.exception.ShipperException;
 import top.trister.shipper.core.util.ClassUtils;
 import top.trister.shipper.core.util.PropertyUtil;

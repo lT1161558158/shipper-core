@@ -1,39 +1,9 @@
+input{
 
-input {
-    //println "input 层"
-    println "请输入任意内容,以回车结束"
-
-    StdInput {
-        println now( 'yyyy')
-//        codec {
-//            $'SimpleCodec'
-//            format = "yyyy-MM-dd HH:mm"
-//        }
-//        delimiter="aaa"
+    IdentityInput{
+        identity "123"
     }
 }
-
-filter {
-    if(it['message']=="end")
-        throw new Exception("stop")
-//    println "filter 层"
-    SplitFilter {
-        field "message"
-        if (it['message']=='h,i')
-            terminator ','
-        else
-            terminator '@'
-    }
-}
-
-
-output {
-//    println "output 层"
-    if (it['message']=='hi')
-        println "hi output"
-    StdOutput {
-        if (it['message']=='hi')
-            println "hi pi"
-//        codec 'JsonCodec'
-    }
+output{
+    StdOutput{}
 }

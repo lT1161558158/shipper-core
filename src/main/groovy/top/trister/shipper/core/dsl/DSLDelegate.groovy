@@ -1,19 +1,19 @@
 package top.trister.shipper.core.dsl
 
-import top.trister.shipper.core.api.Handler
+import top.trister.shipper.core.api.handler.Handler
 import top.trister.shipper.core.builder.HandlerBuilder
 
 class DSLDelegate<T extends Handler> extends PropertiesDelegate {
 
-    Map<String,HandlerDefinition<T>> handlerDefinitions=[:]
+    Map<String, HandlerDefinition<T>> handlerDefinitions = [:]
     Closure closure
     HandlerBuilder handlerBuilder
 
-    def methodMissing(String name, Object obj) {
+    def methodMissing(String name, Object obj) {//一个已知bug,如果在层中使用if语句选择handler实现,则会出现意料之外的情况
         Object[] args = obj
         for (arg in args) {
             if (arg instanceof Closure) {
-                if (!handlerDefinitions.containsKey(name)){
+                if (!handlerDefinitions.containsKey(name)) {
                     def handler = handlerBuilder.builderHandler(name)
                     def definition = new HandlerDefinition()
                     Closure closure = arg
@@ -23,13 +23,14 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
                     definition.name = name
                     closure.delegate = delegate
                     closure.resolveStrategy = Closure.DELEGATE_ONLY
-                    handlerDefinitions[name]=definition
+                    handlerDefinitions[name] = definition
                 }
             } else {
                 Object.methodMissing(name, arg)
             }
         }
     }
+
     @Override
     String toString() {
         return "${this.class} [ handlerDefinitions :$handlerDefinitions]"

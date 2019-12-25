@@ -3,7 +3,14 @@ package top.trister.shipper.core.task;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.trister.shipper.core.api.*;
+import top.trister.shipper.core.api.Initialization;
+import top.trister.shipper.core.api.handler.CodifiedHandler;
+import top.trister.shipper.core.api.handler.Handler;
+import top.trister.shipper.core.api.handler.input.CodecInput;
+import top.trister.shipper.core.api.handler.input.Input;
+import top.trister.shipper.core.api.handler.mapping.Mapping;
+import top.trister.shipper.core.api.handler.output.CodecOutput;
+import top.trister.shipper.core.api.handler.output.Output;
 import top.trister.shipper.core.dsl.DSLDelegate;
 import top.trister.shipper.core.dsl.HandlerDefinition;
 import top.trister.shipper.core.exception.MultipleException;
@@ -12,12 +19,13 @@ import top.trister.shipper.core.exception.ShipperException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static top.trister.shipper.core.task.TaskStepEnum.*;
 
 @Data
-public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable, ShipperTaskContextAware, LogAware {
+public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable, LogAware {
 
     protected Logger log = LoggerFactory.getLogger(AbstractShipperTask.class);
 
@@ -33,10 +41,9 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     protected volatile TaskStepEnum step = CREATE;
 
     /**
-     * 封闭在线程内部的events对象
-     * 子类需要保证其仅被一个线程修改
+     * 封闭在线程内部的events对象引用
      */
-    protected volatile List<Map> events;
+    protected final AtomicReference<Object> eventRef = new AtomicReference<>();
 
     /**
      * 异常内容
@@ -61,8 +68,8 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     }
 
     @Override
-    public List<Map> nowEvents() {
-        return Collections.unmodifiableList(events);
+    public Object nowEvents() {
+        return eventRef.get();
     }
 
     @Override
@@ -73,27 +80,11 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     //初始化部分
     @SuppressWarnings("unchecked")
     protected Input initInput(HandlerDefinition<Input> input) {
-        input.getHandlerClosure().call();
-        Input handler = input.getHandler();
-        doInit(handler);//初始化
-        if (handler.codec() == null) {
-            handler.codec(shipperTaskContext.getDefaultInputCodec());//设置默认的输入编码器
-            log.debug("use default input codec {}", handler.codec());
-        }
-        return handler;
+        return doInit(input);//初始化
     }
 
-    @SuppressWarnings("unchecked")
-    protected Output initOutPut(HandlerDefinition<Output> output, Map event) {
-        output.getHandlerClosure().call(event);
-        Output handler = output.getHandler();
-        doInit(handler);
-        if (handler.codec() == null) {
-            handler.codec(shipperTaskContext.getDefaultOutputCodec());
-            log.debug("use default output codec {}", handler.codec());
-        }
-
-        return handler;
+    protected Output initOutPut(HandlerDefinition<Output> output) {
+        return doInit(output);
     }
 
     /**
@@ -105,14 +96,38 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         step = INITIALIZE_OVER;
     }
 
+
     /**
-     * 对handler进行初始化操作
-     *
-     * @param handler handler
+     * @param handlerDefinition 处理器描述
+     * @return handler
      */
-    private void doInit(Handler handler) {
+    @SuppressWarnings("unchecked")
+    protected <T extends Handler> T doInit(HandlerDefinition<T> handlerDefinition) {
+        //执行 groovy
+        T handler = handlerDefinition.getHandler();
+        if (handler instanceof Input)
+            handlerDefinition.getHandlerClosure().call();//执行输入时,没有事件输入
+        else
+            handlerDefinition.getHandlerClosure().call(eventRef.get());//其他情况有事件输入
+        //执行初始化函数
         if (handler instanceof Initialization)
             ((Initialization) handler).init();
+        //设置默认的编解码器
+        if (handler instanceof CodifiedHandler) {
+            CodifiedHandler codifiedHandler = (CodifiedHandler) handler;
+            if (codifiedHandler.codec() == null) {
+                if (handler instanceof Input) {
+                    codifiedHandler.codec(shipperTaskContext.getDefaultInputCodec());//设置默认的输入编码器
+                    log.debug("use default input codec {}", codifiedHandler.codec());
+                } else if (handler instanceof Output) {
+                    codifiedHandler.codec(shipperTaskContext.getDefaultOutputCodec());//设置默认的输出编码器
+                    log.debug("use default output codec {}", codifiedHandler.codec());
+                } else {
+                    log.warn("Mapping's codec cannot be provided by default");
+                }
+            }
+        }
+        return handler;
     }
 
     /**
@@ -140,7 +155,7 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         Input input = initInput(shipperTaskContext.getInput());
         step = WAITING_INPUT;
         log.debug("{} waiting for event", input);
-        events = Collections.singletonList(input.read());
+        eventRef.set(input instanceof CodecInput ? ((CodecInput) input).codecRead() : input.read());
         step = INPUT_DONE;
         return this;
     }
@@ -155,27 +170,21 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
      * @return shipper task
      * @throws ShipperException shipper
      */
+    @SuppressWarnings("unchecked")
     protected AbstractShipperTask doFilter() {
         step = WAITING_FILTER;
-        DSLDelegate<Filter> filterDelegate = shipperTaskContext.getFilterDelegate();
+        DSLDelegate<Mapping> filterDelegate = shipperTaskContext.getFilterDelegate();
         if (filterDelegate == null)
             return this;
         log.debug("do filter layer");
-        if (events == null || events.size() > 1)
-            throw new ShipperException("must exist anyone event in filter init");
-        filterDelegate.getClosure().call(events.get(0));
-        for (HandlerDefinition<Filter> handlerDefinition : filterDelegate.getHandlerDefinitions().values()) {
-            Filter handler = handlerDefinition.getHandler();
-            doInit(handler);//初始化
-            List<Map> newListEvents = new ArrayList<>();
-            events.forEach(aEvent -> {
-                handlerDefinition.getHandlerClosure().call(aEvent);
-                log.debug("do filter {}", handler);
-                List<Map> newEvents = handler.filter(aEvent);
-                newListEvents.addAll(newEvents);
-            });
-            events = newListEvents;
-        }
+        filterDelegate.getClosure().call(eventRef.get());//初始化mapping层
+        filterDelegate.getHandlerDefinitions()
+                .values().stream()
+                .map(this::doInit)
+                .forEach(h -> {
+                    log.debug("do filter {}", h);
+                    eventRef.set(h.mapping(eventRef.get()));
+                });
         step = FILTER_DONE;
         return this;
     }
@@ -186,20 +195,22 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
      *
      * @throw ShipperException output died 异常
      */
+    @SuppressWarnings("unchecked")
     protected void doOutPut() {
         step = WAITING_OUTPUT;
         DSLDelegate<Output> outputDelegate = shipperTaskContext.getOutputDelegate();
-        events.forEach(event -> {
-            log.debug("do output layer");
-            outputDelegate.getClosure().call(event);
-            outputDelegate.getHandlerDefinitions().forEach((k, v) -> {
-                Output output = initOutPut(v, event);
-                log.debug("do output {}", output);
-                if (output instanceof Recyclable && !((Recyclable) output).recyclable())
-                    throw new ShipperException(output + " died");
-                output.write(event);
-            });
-        });
+        log.debug("do output layer");
+        outputDelegate.getClosure().call(eventRef.get());//初始化output层
+        outputDelegate.getHandlerDefinitions()
+                .values().stream()
+                .map(this::doInit)
+                .forEach(h -> {
+                    log.debug("do output {}", h);
+                    if (h instanceof CodecOutput)
+                        ((CodecOutput) h).codecWrite(eventRef.get());
+                    else
+                        h.write(eventRef.get());
+                });
         step = WAITING_DONE;
     }
 
@@ -207,7 +218,7 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
 
 
     @Override
-    public ShipperTask call() throws Exception {
+    public void run() {
         try {
             taskInit();
             doSomething();
@@ -216,9 +227,17 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         } finally {
             close();
         }
-        if (!exceptions.isEmpty())
-            throw new MultipleException(exceptions);
-        return this;
+        tryThrowException();
+    }
+
+    /**
+     * 尝试抛出运行时的异常
+     */
+    private void tryThrowException() {
+        if (!exceptions.isEmpty()) {
+            String multipleException = exceptions.stream().map(Exception::getMessage).collect(Collectors.joining(";"));
+            throw new MultipleException(multipleException, exceptions);
+        }
     }
 
     @Override

@@ -1,7 +1,7 @@
 package top.trister.shipper.core.factories;
 
 import lombok.Data;
-import top.trister.shipper.core.api.Input;
+import top.trister.shipper.core.api.handler.input.Input;
 import top.trister.shipper.core.api.Recyclable;
 import top.trister.shipper.core.api.Scheduled;
 import top.trister.shipper.core.task.StandardLoopShipperTask;

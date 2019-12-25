@@ -1,12 +1,8 @@
 package top.trister.shipper.core.task;
 
-import top.trister.shipper.core.exception.ShipperException;
-
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
 
-public interface ShipperTask extends Callable<ShipperTask> {
+public interface ShipperTask extends Runnable,ShipperTaskContextAware {
     /**
      * @return 当前异常列表
      */
@@ -22,13 +18,10 @@ public interface ShipperTask extends Callable<ShipperTask> {
      *
      * @return event list
      */
-    List<Map> nowEvents();
+    Object nowEvents();
 
     default ShipperTask doing(){
-        try{
-            return call();
-        }catch (Exception e){
-            throw new ShipperException(e);
-        }
+        run();
+        return this;
     }
 }

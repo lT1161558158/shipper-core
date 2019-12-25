@@ -1,33 +1,30 @@
 package top.trister.shipper.core.builder
 
-
-import top.trister.shipper.core.api.Handler
-import top.trister.shipper.core.api.InputCodec
-import top.trister.shipper.core.api.OutCodec
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import top.trister.shipper.core.api.handler.Handler
+import top.trister.shipper.core.api.handler.codec.Codec
 import top.trister.shipper.core.bean.Shipper
 import top.trister.shipper.core.dsl.DSLDelegate
 import top.trister.shipper.core.dsl.HandlerDefinition
 import top.trister.shipper.core.enums.HandlerEnums
 import top.trister.shipper.core.exception.ShipperException
+import top.trister.shipper.core.factories.TaskFactory
 import top.trister.shipper.core.factories.TaskImplStory
 import top.trister.shipper.core.implHandler.codec.JsonCodec
 import top.trister.shipper.core.implHandler.codec.SimpleCodec
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import top.trister.shipper.core.factories.TaskFactory
 import top.trister.shipper.core.task.ShipperTask
 import top.trister.shipper.core.task.ShipperTaskContext
-
 import java.util.stream.Collectors
 
 class StandardShipperTaskBuilder implements ShipperTaskBuilder {
     private static final Logger log = LoggerFactory.getLogger(StandardShipperTaskBuilder.class)
-    private InputCodec<?> defaultInputCodec
-    private OutCodec<?> defaultOutputCodec
+    private Codec<?, ?> defaultInputCodec
+    private Codec<?, ?> defaultOutputCodec
 
     TaskFactory taskFactory = new TaskFactory()
 
-    StandardShipperTaskBuilder(InputCodec<?> defaultInputCodec, OutCodec<?> defaultOutputCodec) {
+    StandardShipperTaskBuilder(Codec<?, ?> defaultInputCodec, Codec<?, ?> defaultOutputCodec) {
         this.defaultInputCodec = defaultInputCodec
         this.defaultOutputCodec = defaultOutputCodec
     }
@@ -38,6 +35,7 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
     }
 
     private ShipperTask buildTask(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
+
         def shipperTaskContext = ShipperTaskContext.builder()
                 .input(input)
                 .filterDelegate(filterDelegate)
