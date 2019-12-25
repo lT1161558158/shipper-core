@@ -5,15 +5,17 @@ import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import top.trister.shipper.core.BootStrapShipper;
-import top.trister.shipper.core.builder.*;
+import top.trister.shipper.core.builder.ShipperBuilder;
 import top.trister.shipper.core.task.ShipperTask;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Data
@@ -42,16 +44,19 @@ public class StandardShipperExecutor implements ShipperExecutor {
 
 
     public static void main(String[] args) throws Exception {
-        Stream<String> lines = new BufferedReader(new FileReader("C:\\work\\code\\java\\shipper\\src\\main\\resources\\test.shipper")).lines();
-        String dsl = lines.collect(Collectors.joining("\n"));
-        List<CompletableFuture<ShipperTask>> submit = BootStrapShipper.builder().build().submit(dsl);
-        CompletableFuture<Void> voidCompletableFuture = CompletableFuture.allOf(submit.toArray(new CompletableFuture[0]));
-        voidCompletableFuture.whenComplete((v, e) -> voidCompletableFuture.completeExceptionally(e));
-        try {
-            voidCompletableFuture.join();
-        } catch (RuntimeException e) {
-            log.error("", e);
-        }
+        Optional.ofNullable(Thread.currentThread().getContextClassLoader().getResource("test.shipper")).ifPresent(url -> {
+            try {
+                String dsl = new BufferedReader(new InputStreamReader(url.openStream()))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+                List<CompletableFuture<ShipperTask>> submit = BootStrapShipper.builder().build().submit(dsl);
+                CompletableFuture<Void> voidCompletableFuture = CompletableFuture.allOf(submit.toArray(new CompletableFuture[0]));
+                voidCompletableFuture.whenComplete((v, e) -> voidCompletableFuture.completeExceptionally(e));
+                voidCompletableFuture.join();
+            } catch (IOException e) {
+                log.error("", e);
+            }
+        });
     }
 
     @Override
