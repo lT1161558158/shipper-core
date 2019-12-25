@@ -15,6 +15,7 @@ import top.trister.shipper.core.implHandler.codec.JsonCodec
 import top.trister.shipper.core.implHandler.codec.SimpleCodec
 import top.trister.shipper.core.task.ShipperTask
 import top.trister.shipper.core.task.ShipperTaskContext
+
 import java.util.stream.Collectors
 
 class StandardShipperTaskBuilder implements ShipperTaskBuilder {
@@ -48,8 +49,28 @@ class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         ShipperTask shipperTask = taskImplStory.taskImplClazz.newInstance()
         log.debug("build {}", taskImplStory.taskImplClazz)
         shipperTask.shipperTaskContext(shipperTaskContext)
+        shipperTask.log(LoggerFactory.getLogger(nameBuilder(input, filterDelegate, outputDelegate)))
         return shipperTask
     }
+
+    private String nameBuilder(HandlerDefinition input, DSLDelegate filterDelegate, DSLDelegate outputDelegate) {
+        StringBuilder builder = new StringBuilder(input.getName())
+        if (filterDelegate != null) {
+            filterDelegate.closure.call()
+            filterDelegate.getAndClear().forEach({ h ->
+                builder.append("|").append(h.getName())
+            })
+        }
+        outputDelegate.closure.call()
+        StringBuilder outBuilder = new StringBuilder();
+        outputDelegate.getAndClear().forEach({ h ->
+            if (outBuilder.length() != 0)
+                outBuilder.append(",")
+            outBuilder.append(h.getName())
+        })
+        builder.append("|").append("[").append(outBuilder).append("]")
+        return builder.toString()
+    };
 
     @Override
     List<ShipperTask> build(Shipper shipper) {

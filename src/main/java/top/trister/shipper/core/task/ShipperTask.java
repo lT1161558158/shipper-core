@@ -2,7 +2,7 @@ package top.trister.shipper.core.task;
 
 import java.util.List;
 
-public interface ShipperTask extends Runnable,ShipperTaskContextAware {
+public interface ShipperTask extends Runnable,ShipperTaskContextAware,LogAware {
     /**
      * @return 当前异常列表
      */

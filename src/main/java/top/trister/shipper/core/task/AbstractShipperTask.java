@@ -27,7 +27,7 @@ import static top.trister.shipper.core.task.TaskStepEnum.*;
 @Data
 public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable, LogAware {
 
-    protected Logger log = LoggerFactory.getLogger(AbstractShipperTask.class);
+    protected volatile Logger log = LoggerFactory.getLogger(AbstractShipperTask.class);
 
     /**
      * 任务的描述信息
@@ -95,6 +95,8 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         initInput(shipperTaskContext.getInput());
         step = INITIALIZE_OVER;
     }
+
+
 
 
     /**
@@ -176,10 +178,10 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         DSLDelegate<Mapping> filterDelegate = shipperTaskContext.getFilterDelegate();
         if (filterDelegate == null)
             return this;
-        log.debug("do filter layer");
-        filterDelegate.getClosure().call(eventRef.get());//初始化mapping层
-        filterDelegate.getHandlerDefinitions()
-                .values().stream()
+//        log.debug("do filter layer");
+//        filterDelegate.getClosure().call(eventRef.get());//初始化mapping层
+        filterDelegate.getAndClear()
+                .stream()
                 .map(this::doInit)
                 .forEach(h -> {
                     log.debug("do filter {}", h);
@@ -199,10 +201,10 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     protected void doOutPut() {
         step = WAITING_OUTPUT;
         DSLDelegate<Output> outputDelegate = shipperTaskContext.getOutputDelegate();
-        log.debug("do output layer");
-        outputDelegate.getClosure().call(eventRef.get());//初始化output层
-        outputDelegate.getHandlerDefinitions()
-                .values().stream()
+//        log.debug("do output layer");
+//        outputDelegate.getClosure().call(eventRef.get());//初始化output层
+        outputDelegate.getAndClear()
+                .stream()
                 .map(this::doInit)
                 .forEach(h -> {
                     log.debug("do output {}", h);
