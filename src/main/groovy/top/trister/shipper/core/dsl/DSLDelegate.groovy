@@ -16,7 +16,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
         return result
     }
 
-    def methodMissing(String name, Object obj) {//一个已知bug,如果在层中使用if语句选择handler实现,则会出现意料之外的情况
+    def methodMissing(String name, Object obj) {//一个已知bug,如果在层中使用if语句选择handler实现,则会出现意料之外的情况  已修复,并且修复了filter和output的执行顺序的问题
         Object[] args = obj
         for (arg in args) {
             if (arg instanceof Closure) {
