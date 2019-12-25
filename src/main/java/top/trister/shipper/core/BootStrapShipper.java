@@ -2,12 +2,17 @@ package top.trister.shipper.core;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import top.trister.shipper.core.builder.*;
 import top.trister.shipper.core.executor.ShipperExecutor;
 import top.trister.shipper.core.executor.StandardShipperExecutor;
 import top.trister.shipper.core.task.ShipperTask;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
@@ -17,6 +22,7 @@ import java.util.stream.Collectors;
  */
 @Builder
 @Data
+@Slf4j
 public final class BootStrapShipper {
     ShipperExecutor shipperExecutor;
     HandlerBuilder handlerBuilder;
@@ -45,5 +51,20 @@ public final class BootStrapShipper {
                 .stream()
                 .map(t->CompletableFuture.supplyAsync(t::doing, shipperExecutor))
                 .collect(Collectors.toList());
+    }
+    public void executeBySource(String sourceFile){
+        Optional.ofNullable(Thread.currentThread().getContextClassLoader().getResource(sourceFile)).ifPresent(url -> {
+            try {
+                String dsl = new BufferedReader(new InputStreamReader(url.openStream()))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+                List<CompletableFuture<ShipperTask>> submit = submit(dsl);
+                CompletableFuture<Void> voidCompletableFuture = CompletableFuture.allOf(submit.toArray(new CompletableFuture[0]));
+                voidCompletableFuture.whenComplete((v, e) -> voidCompletableFuture.completeExceptionally(e));
+                voidCompletableFuture.join();
+            } catch (IOException e) {
+                log.error("", e);
+            }
+        });
     }
 }
