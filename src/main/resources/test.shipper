@@ -1,7 +1,7 @@
 input{
 
     IdentityInput{
-        identity 666
+        identity = null//identity null 时由于identity是groovy的一个内部函数,因此会导致null异常
     }
 }
 output{

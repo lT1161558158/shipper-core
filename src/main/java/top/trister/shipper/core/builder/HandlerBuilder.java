@@ -13,4 +13,10 @@ public interface HandlerBuilder {
      * @return 构造出的实例
      */
     Handler builderHandler(String name);
+
+    /**
+     *
+     * @return 是否已经初始化
+     */
+    boolean initialized();
 }

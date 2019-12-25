@@ -2,23 +2,27 @@ package top.trister.shipper.core.executor;
 
 import top.trister.shipper.core.task.ShipperTask;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 /**
  * shipper的执行器
  */
-public interface ShipperExecutor extends AutoCloseable {
+public interface ShipperExecutor extends AutoCloseable, ExecutorService {
     /**
-     *  just run
-     * @param dsl dsl
+     * just run
+     *
+     * @param shipperTask shipperTask
      */
-    void execute(String dsl);
+    default void execute(ShipperTask shipperTask) {
+        submit(shipperTask);
+    }
+
 
     /**
-     *
-     * @param dsl dsl
+     * @param shipperTask shipperTask
      * @return 执行中的future
      */
-    List<CompletableFuture<ShipperTask>> submit(String dsl);
+    CompletableFuture<ShipperTask> submit(ShipperTask shipperTask);
+
 }

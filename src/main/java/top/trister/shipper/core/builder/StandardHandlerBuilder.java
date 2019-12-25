@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 public final class StandardHandlerBuilder implements HandlerBuilder {
 
     private volatile Map<String, Class<Handler>> simpleNameCache = new ConcurrentHashMap<>();
-
+    private AtomicBoolean init=new AtomicBoolean(false);
     /**
      * 加载Handler
      *
@@ -26,6 +27,7 @@ public final class StandardHandlerBuilder implements HandlerBuilder {
      */
     @Override
     public void reLoadHandler() throws ShipperException{
+        init.set(false);
         Enumeration<URL> resources;
         try {
             resources = Thread.currentThread().getContextClassLoader().getResources("META-INF/shipper.factories");
@@ -57,6 +59,7 @@ public final class StandardHandlerBuilder implements HandlerBuilder {
         synchronized (this) {
             simpleNameCache = new ConcurrentHashMap<>(temp);
         }
+        init.set(true);
     }
 
     /**
@@ -107,6 +110,11 @@ public final class StandardHandlerBuilder implements HandlerBuilder {
         } catch (Exception e) {
             throw new ShipperException(e);
         }
+    }
+
+    @Override
+    public boolean initialized() {
+        return init.get();
     }
 
 }

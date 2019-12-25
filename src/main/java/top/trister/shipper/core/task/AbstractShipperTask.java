@@ -224,6 +224,7 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
             doSomething();
         } catch (Exception e) {
             exception(e);
+            throw new ShipperException(e);
         } finally {
             close();
         }
