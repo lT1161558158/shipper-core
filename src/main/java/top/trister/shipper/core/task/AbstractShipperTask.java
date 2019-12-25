@@ -178,8 +178,8 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         DSLDelegate<Mapping> filterDelegate = shipperTaskContext.getFilterDelegate();
         if (filterDelegate == null)
             return this;
-//        log.debug("do filter layer");
-//        filterDelegate.getClosure().call(eventRef.get());//初始化mapping层
+        log.debug("do filter layer");
+        filterDelegate.getClosure().call(eventRef.get());//初始化mapping层
         filterDelegate.getAndClear()
                 .stream()
                 .map(this::doInit)
@@ -201,8 +201,8 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     protected void doOutPut() {
         step = WAITING_OUTPUT;
         DSLDelegate<Output> outputDelegate = shipperTaskContext.getOutputDelegate();
-//        log.debug("do output layer");
-//        outputDelegate.getClosure().call(eventRef.get());//初始化output层
+        log.debug("do output layer");
+        outputDelegate.getClosure().call(eventRef.get());//初始化output层
         outputDelegate.getAndClear()
                 .stream()
                 .map(this::doInit)
