@@ -44,6 +44,12 @@ public final class BootStrapShipper {
         if (shipperExecutor == null)
             shipperExecutor = new StandardShipperExecutor(ForkJoinPool.commonPool());
     }
+
+    /**
+     *
+     * @param dsl dsl
+     * @return dsl中包含的多个任务
+     */
     public List<CompletableFuture<ShipperTask>> submit(String dsl) {
         stateCheck();
         return shipperTaskBuilder
@@ -52,6 +58,11 @@ public final class BootStrapShipper {
                 .map(t->CompletableFuture.supplyAsync(t::doing, shipperExecutor))
                 .collect(Collectors.toList());
     }
+
+    /**
+     * 如果 shipper 文件能读到,则执行这个 shipper
+     * @param sourceFile resources下的文件
+     */
     public void executeBySource(String sourceFile){
         Optional.ofNullable(Thread.currentThread().getContextClassLoader().getResource(sourceFile)).ifPresent(url -> {
             try {

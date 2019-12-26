@@ -97,8 +97,6 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     }
 
 
-
-
     /**
      * @param handlerDefinition 处理器描述
      * @return handler
@@ -185,7 +183,12 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
                 .map(this::doInit)
                 .forEach(h -> {
                     log.debug("do filter {}", h);
-                    eventRef.set(h.mapping(eventRef.get()));
+                    Object arg = eventRef.get();
+                    if (arg == null) {
+                        log.debug("null value after {}", h);
+                        return;
+                    }
+                    eventRef.set(h.mapping(arg));
                 });
         step = FILTER_DONE;
         return this;
@@ -202,16 +205,22 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         step = WAITING_OUTPUT;
         DSLDelegate<Output> outputDelegate = shipperTaskContext.getOutputDelegate();
         log.debug("do output layer");
-        outputDelegate.getClosure().call(eventRef.get());//初始化output层
+        Object arg = eventRef.get();
+        outputDelegate.getClosure().call(arg);//初始化output层
+
         outputDelegate.getAndClear()
                 .stream()
                 .map(this::doInit)
                 .forEach(h -> {
                     log.debug("do output {}", h);
+                    if (arg == null) {
+                        log.debug("null value before {}", h);
+                        return;
+                    }
                     if (h instanceof CodecOutput)
-                        ((CodecOutput) h).codecWrite(eventRef.get());
+                        ((CodecOutput) h).codecWrite(arg);
                     else
-                        h.write(eventRef.get());
+                        h.write(arg);
                 });
         step = WAITING_DONE;
     }
