@@ -33,12 +33,15 @@ public final class BootStrapShipper {
      * 成员状态检查
      */
     private void stateCheck() {
-        if (handlerBuilder == null)
-            handlerBuilder = new StandardHandlerBuilder();
-        if (!handlerBuilder.initialized())
-            handlerBuilder.reLoadHandler();
-        if (shipperBuilder == null)
+
+        if (shipperBuilder == null) {
+            if (handlerBuilder == null)
+                handlerBuilder = new StandardHandlerBuilder();
+            if (!handlerBuilder.initialized())
+                handlerBuilder.reLoadHandler();
             shipperBuilder = new StandardShipperBuilder(handlerBuilder);
+        }
+
         if (shipperTaskBuilder == null)
             shipperTaskBuilder = new StandardShipperTaskBuilder();
         if (shipperExecutor == null)
