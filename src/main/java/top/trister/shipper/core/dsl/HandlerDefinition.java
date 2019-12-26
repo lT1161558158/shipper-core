@@ -9,4 +9,5 @@ public class HandlerDefinition<T extends Handler> {
     String name;
     T handler;
     Closure handlerClosure;
+    HandlerDelegate handlerDelegate;
 }

@@ -100,6 +100,7 @@ public class ClassUtils {
      * @return 类的完整名称
      */
     private static List<String> getClassNameByJar(JarFile jarFile) {
+
         List<String> myClassName = new ArrayList<>();
         try {
             Enumeration<JarEntry> entries = jarFile.entries();
@@ -116,6 +117,12 @@ public class ClassUtils {
         }
         return myClassName;
     }
+
+//    public static Object proxyObject(Object source,Class<?> ...interfaces){
+//        Proxy.newProxyInstance(source.getClass().getClassLoader(),source.getClass().getInterfaces(),(proxy,method,args)->{
+//            return source
+//        });
+//    }
 
     public static boolean isChild(Class<?> clazz,Class<?> type){
         return type.isAssignableFrom(clazz);

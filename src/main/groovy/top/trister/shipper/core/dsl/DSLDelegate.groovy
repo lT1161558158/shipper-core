@@ -16,7 +16,8 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
         return result
     }
 
-    def methodMissing(String name, Object obj) {//一个已知bug,如果在层中使用if语句选择handler实现,则会出现意料之外的情况  已修复,并且修复了filter和output的执行顺序的问题
+    def methodMissing(String name, Object obj) {
+//一个已知bug,如果在层中使用if语句选择handler实现,则会出现意料之外的情况  已修复,并且修复了filter和output的执行顺序的问题
         Object[] args = obj
         for (arg in args) {
             if (arg instanceof Closure) {
@@ -28,6 +29,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
                     definition.handlerClosure = closure
                     definition.handler = handler
                     definition.name = name
+                    definition.handlerDelegate = delegate
                     closure.delegate = delegate
                     closure.resolveStrategy = Closure.DELEGATE_ONLY
                     handlerDefinitions[name] = definition
@@ -36,6 +38,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
                     handlerList << handlerDefinitions[name]
                 }
             } else {
+//                properties[name] = arg
                 Object.methodMissing(name, arg)
             }
         }
@@ -45,5 +48,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
     String toString() {
         return "${this.class} [ handlerDefinitions :$handlerDefinitions]"
     }
+
+
 }
 

@@ -43,6 +43,9 @@ class HandlerDelegate extends PropertiesDelegate {
             handler.codec(codecHandler)
         }
     }
+    String cron(){
+        return properties["cron"]
+    }
 
     static def getArgs(Object arg){
         if (arg instanceof Object[]){

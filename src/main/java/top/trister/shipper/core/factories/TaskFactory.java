@@ -49,6 +49,6 @@ public final class TaskFactory {
                 return story;
         }
         return story;
-    }
+   }
 
 }
