@@ -96,19 +96,15 @@ public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
     @SuppressWarnings("unchecked")
     public List<ShipperTask> build(Shipper shipper) {
         Map<HandlerEnums, DSLDelegate> context = shipper.getContext();
-        DSLDelegate inputDelegate = context.get(HandlerEnums.INPUT);
-        DSLDelegate outputDelegate = context.get(HandlerEnums.OUTPUT);
-        DSLDelegate filterDelegate = context.get(HandlerEnums.FILTER);
+        DSLDelegate<Input> inputDelegate = context.get(HandlerEnums.INPUT);
+        DSLDelegate<Output> outputDelegate = context.get(HandlerEnums.OUTPUT);
+        DSLDelegate<Mapping> filterDelegate = context.get(HandlerEnums.FILTER);
         if (outputDelegate == null)
             throw new ShipperException("at least one output must be provided");
         if (inputDelegate == null)
             throw new ShipperException("at least one input must be provided");
         inputDelegate.getClosure().call();//创建input的上下文;
         Map<String, HandlerDefinition<Input>> handlerDefinitions = inputDelegate.getHandlerDefinitions();
-        return handlerDefinitions.values().stream()
-                .map(e -> buildTask(e, filterDelegate, outputDelegate))
-                .collect(Collectors.toList());
+        return handlerDefinitions.values().stream().map(e -> buildTask(e, filterDelegate, outputDelegate)).collect(Collectors.toList());
     }
-
-    ;
-};
+}
