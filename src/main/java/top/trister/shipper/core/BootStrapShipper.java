@@ -32,7 +32,7 @@ public final class BootStrapShipper {
     /**
      * 成员状态检查
      */
-    private void stateCheck(){
+    private void stateCheck() {
         if (handlerBuilder == null)
             handlerBuilder = new StandardHandlerBuilder();
         if (!handlerBuilder.initialized())
@@ -46,7 +46,6 @@ public final class BootStrapShipper {
     }
 
     /**
-     *
      * @param dsl dsl
      * @return dsl中包含的多个任务
      */
@@ -55,15 +54,17 @@ public final class BootStrapShipper {
         return shipperTaskBuilder
                 .build(shipperBuilder.build(dsl))
                 .stream()
-                .map(t->CompletableFuture.supplyAsync(t::doing, shipperExecutor))
+                .map(shipperExecutor::submit)
                 .collect(Collectors.toList());
     }
 
+
     /**
      * 如果 shipper 文件能读到,则执行这个 shipper
+     *
      * @param sourceFile resources下的文件
      */
-    public void executeBySource(String sourceFile){
+    public void executeBySource(String sourceFile) {
         Optional.ofNullable(Thread.currentThread().getContextClassLoader().getResource(sourceFile)).ifPresent(url -> {
             try {
                 String dsl = new BufferedReader(new InputStreamReader(url.openStream()))
