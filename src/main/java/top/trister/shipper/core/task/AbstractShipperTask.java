@@ -9,6 +9,7 @@ import top.trister.shipper.core.api.handler.Handler;
 import top.trister.shipper.core.api.handler.input.CodecInput;
 import top.trister.shipper.core.api.handler.input.Input;
 import top.trister.shipper.core.api.handler.mapping.Mapping;
+import top.trister.shipper.core.api.handler.mapping.MultiMapping;
 import top.trister.shipper.core.api.handler.output.CodecOutput;
 import top.trister.shipper.core.api.handler.output.Output;
 import top.trister.shipper.core.dsl.DSLDelegate;
@@ -17,6 +18,7 @@ import top.trister.shipper.core.exception.MultipleException;
 import top.trister.shipper.core.exception.ShipperException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -188,7 +190,11 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
                         log.debug("null value after {}", h);
                         return;
                     }
-                    eventRef.set(h.mapping(arg));
+                    if (arg instanceof Collection && h instanceof MultiMapping) {
+                        eventRef.set(((MultiMapping) h).multiMapping((Collection) arg));
+                    } else {
+                        eventRef.set(h.mapping(arg));
+                    }
                 });
         step = FILTER_DONE;
         return this;
