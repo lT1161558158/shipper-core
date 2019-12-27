@@ -24,7 +24,7 @@ class HandlerDelegate extends PropertiesDelegate {
         if(handler.metaClass.hasProperty(handler,name))
             handler."$name"=getArgs(value)
         else
-            Object.propertyMissing(name,value)
+            super.propertyMissing(name,value)
     }
 
     def codec(String name){
@@ -43,9 +43,7 @@ class HandlerDelegate extends PropertiesDelegate {
             handler.codec(codecHandler)
         }
     }
-    String cron(){
-        return properties["cron"]
-    }
+
 
     static def getArgs(Object arg){
         if (arg instanceof Object[]){

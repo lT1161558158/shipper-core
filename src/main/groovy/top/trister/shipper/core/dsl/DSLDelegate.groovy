@@ -38,8 +38,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
                     handlerList << handlerDefinitions[name]
                 }
             } else {
-//                properties[name] = arg
-                Object.methodMissing(name, arg)
+                super.propertyMissing(name,arg)
             }
         }
     }
@@ -47,6 +46,10 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
     @Override
     String toString() {
         return "${this.class} [ handlerDefinitions :$handlerDefinitions]"
+    }
+
+    String cron(){
+        return properties["cron"]
     }
 
 

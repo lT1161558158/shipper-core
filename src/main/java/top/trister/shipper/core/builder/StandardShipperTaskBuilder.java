@@ -14,15 +14,19 @@ import top.trister.shipper.core.dsl.HandlerDefinition;
 import top.trister.shipper.core.enums.HandlerEnums;
 import top.trister.shipper.core.exception.ShipperException;
 import top.trister.shipper.core.factories.TaskFactory;
-import top.trister.shipper.core.implHandler.SimpleScheduledInput;
+import top.trister.shipper.core.implHandler.SimpleScheduled;
 import top.trister.shipper.core.implHandler.codec.JsonCodec;
 import top.trister.shipper.core.implHandler.codec.SimpleCodec;
 import top.trister.shipper.core.task.ShipperTask;
 import top.trister.shipper.core.task.ShipperTaskContext;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
@@ -41,7 +45,7 @@ public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         defaultOutputCodec = new JsonCodec();
     }
 
-    private ShipperTask buildTask(HandlerDefinition<Input> input, DSLDelegate<Mapping> filterDelegate, DSLDelegate<Output> outputDelegate) {
+    private ShipperTask buildTask(DSLDelegate<Input> inputDSLDelegate, HandlerDefinition<Input> input, DSLDelegate<Mapping> filterDelegate, DSLDelegate<Output> outputDelegate) {
 
         ShipperTaskContext shipperTaskContext = ShipperTaskContext.builder()
                 .input(input)
@@ -53,9 +57,16 @@ public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         Handler handler = input.getHandler();
         try {
             ShipperTask shipperTask;
-            String cron = input.getHandlerDelegate().cron();
+            String cron = inputDSLDelegate.cron();
             if (cron != null && !(handler instanceof Scheduled)) {
-                input.setHandler(new SimpleScheduledInput(input.getHandler(), cron));//给simple类型的shipper添加cron能力
+                Class<?>[] interfaces = handler.getClass().getInterfaces();
+                Class[] newInterFaces = new Class[interfaces.length + 1];
+                System.arraycopy(interfaces, 0, newInterFaces, 0, interfaces.length);
+                newInterFaces[interfaces.length] = Scheduled.class;
+                Scheduled scheduled = new SimpleScheduled(cron);
+                Set<Method> methods = Stream.of(Scheduled.class.getMethods()).collect(Collectors.toSet());
+                Input newHandler = (Input) Proxy.newProxyInstance(handler.getClass().getClassLoader(), newInterFaces, (proxy, method, args) -> method.invoke(methods.contains(method) ? scheduled : handler, args));
+                input.setHandler(newHandler);//给simple类型的shipper添加cron能力
                 shipperTask = taskFactory.findStory(Scheduled.class).getTaskImplClazz().newInstance();
             } else {
                 shipperTask = taskFactory.findStory(handler.getClass()).getTaskImplClazz().newInstance();
@@ -105,6 +116,6 @@ public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
             throw new ShipperException("at least one input must be provided");
         inputDelegate.getClosure().call();//创建input的上下文;
         Map<String, HandlerDefinition<Input>> handlerDefinitions = inputDelegate.getHandlerDefinitions();
-        return handlerDefinitions.values().stream().map(e -> buildTask(e, filterDelegate, outputDelegate)).collect(Collectors.toList());
+        return handlerDefinitions.values().stream().map(e -> buildTask(inputDelegate, e, filterDelegate, outputDelegate)).collect(Collectors.toList());
     }
 }

@@ -31,7 +31,7 @@ abstract class BaseShipperScript extends Script implements BaseShipper {
         dslParse(closure, HandlerEnums.OUTPUT)
     }
     def cron(Closure closure){
-
+        //TODO 在layer解析时设置 cron
     }
     //////////////自定义函数
     /**

@@ -1,8 +1,9 @@
 input{
 
     IdentityInput{
-        identity = null//identity null 时由于identity是groovy的一个内部函数,因此会导致null异常
+        identity = "1234"//identity null 时由于identity是groovy的一个内部函数,因此会导致null异常
     }
+    cron ="*/5 * * * * ?"
 }
 output{
     StdOutput{}
