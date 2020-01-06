@@ -24,4 +24,5 @@ public interface ShipperTask extends Runnable,ShipperTaskContextAware,LogAware {
         run();
         return this;
     }
+
 }

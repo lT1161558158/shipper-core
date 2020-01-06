@@ -74,6 +74,7 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         return eventRef.get();
     }
 
+
     @Override
     public ShipperTaskContext ShipperTaskContext() {
         return shipperTaskContext;
@@ -85,9 +86,6 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         return doInit(input);//初始化
     }
 
-    protected Output initOutPut(HandlerDefinition<Output> output) {
-        return doInit(output);
-    }
 
     /**
      * 任务的初始化
@@ -158,6 +156,8 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         step = WAITING_INPUT;
         log.debug("{} waiting for event", input);
         eventRef.set(input instanceof CodecInput ? ((CodecInput) input).codecRead() : input.read());
+        Object read = eventRef.get();
+        log.debug("read {} type {} by init", read, read.getClass().getSimpleName());
         step = INPUT_DONE;
         return this;
     }
@@ -178,18 +178,19 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         DSLDelegate<Mapping> filterDelegate = shipperTaskContext.getFilterDelegate();
         if (filterDelegate == null)
             return this;
-        log.debug("do filter layer");
-        filterDelegate.getClosure().call(eventRef.get());//初始化mapping层
+        Object initArg = eventRef.get();
+        log.debug("do filter layer by {} type {}", initArg, initArg.getClass().getSimpleName());
+        filterDelegate.getClosure().call(initArg);//初始化mapping层
         filterDelegate.getAndClear()
                 .stream()
                 .map(this::doInit)
                 .forEach(h -> {
-                    log.debug("do filter {}", h);
                     Object arg = eventRef.get();
                     if (arg == null) {
-                        log.debug("null value after {}", h);
+                        log.debug("null value before {}", h);
                         return;
                     }
+                    log.debug("do filter {} by {} type {}", h, arg, arg.getClass().getSimpleName());
                     if (arg instanceof Collection && h instanceof MultiMapping) {
                         eventRef.set(((MultiMapping) h).multiMapping((Collection) arg));
                     } else {
@@ -210,8 +211,9 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
     protected void doOutPut() {
         step = WAITING_OUTPUT;
         DSLDelegate<Output> outputDelegate = shipperTaskContext.getOutputDelegate();
-        log.debug("do output layer");
         Object arg = eventRef.get();
+        log.debug("do output layer by {} type {}", arg, arg.getClass().getSimpleName());
+
         outputDelegate.getClosure().call(arg);//初始化output层
 
         outputDelegate.getAndClear()
@@ -219,10 +221,6 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
                 .map(this::doInit)
                 .forEach(h -> {
                     log.debug("do output {}", h);
-                    if (arg == null) {
-                        log.debug("null value before {}", h);
-                        return;
-                    }
                     if (h instanceof CodecOutput)
                         ((CodecOutput) h).codecWrite(arg);
                     else
@@ -241,7 +239,6 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
             doSomething();
         } catch (Exception e) {
             exception(e);
-            throw new ShipperException(e);
         } finally {
             close();
         }

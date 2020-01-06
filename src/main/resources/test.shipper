@@ -1,10 +1,10 @@
-input{
+input {
 
-    IdentityInput{
+    IdentityInput {
         identity = "1234"//identity null 时由于identity是groovy的一个内部函数,因此会导致null异常
     }
-    cron ="*/5 * * * * ?"
+    cron = "*/5 * * * * ?"
 }
-output{
-    StdOutput{}
+output {
+    StdOutput {}
 }
