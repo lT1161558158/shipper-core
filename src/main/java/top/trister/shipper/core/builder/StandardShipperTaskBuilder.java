@@ -1,6 +1,6 @@
 package top.trister.shipper.core.builder;
 
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 import top.trister.shipper.core.api.Scheduled;
 import top.trister.shipper.core.api.handler.Handler;
@@ -28,11 +28,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
+@Slf4j
 public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
-    private static final Logger log = LoggerFactory.getLogger(StandardShipperTaskBuilder.class);
+    /**
+     * 默认的输入编解码器
+     */
     private Codec<?, ?> defaultInputCodec;
+    /**
+     * 默认的输出编解码器
+     */
     private Codec<?, ?> defaultOutputCodec;
+    /**
+     * 任务工厂
+     */
     private TaskFactory taskFactory = new TaskFactory();
 
     public StandardShipperTaskBuilder(Codec<?, ?> defaultInputCodec, Codec<?, ?> defaultOutputCodec) {
@@ -45,6 +53,13 @@ public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
         defaultOutputCodec = new JsonCodec();
     }
 
+    /**
+     * @param inputDSLDelegate inputDSLDelegate
+     * @param input            input
+     * @param filterDelegate   filterDelegate
+     * @param outputDelegate   outputDelegate
+     * @return ShipperTask
+     */
     private ShipperTask buildTask(DSLDelegate<Input> inputDSLDelegate, HandlerDefinition<Input> input, DSLDelegate<Mapping> filterDelegate, DSLDelegate<Output> outputDelegate) {
 
         ShipperTaskContext shipperTaskContext = ShipperTaskContext.builder()
@@ -81,8 +96,13 @@ public class StandardShipperTaskBuilder implements ShipperTaskBuilder {
 
     }
 
+    /**
+     * @param input          input
+     * @param filterDelegate filterDelegate
+     * @param outputDelegate outputDelegate
+     * @return 任务的名字
+     */
     private String nameBuilder(HandlerDefinition input, DSLDelegate<Mapping> filterDelegate, DSLDelegate<Output> outputDelegate) {
-
         StringBuilder builder = new StringBuilder(input.getName());
         if (filterDelegate != null) {
 

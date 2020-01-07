@@ -7,6 +7,6 @@ import top.trister.shipper.core.enums.HandlerEnums;
 import java.util.Map;
 @Data
 public class Shipper {
-    String shipperDescribe;
-    Map<HandlerEnums, DSLDelegate> context;
+    String shipperDescribe;//shipper的描述
+    Map<HandlerEnums, DSLDelegate> context;//描述构造的上下文
 }

@@ -182,19 +182,18 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         log.debug("do filter layer by {} type {}", initArg, initArg.getClass().getSimpleName());
         filterDelegate.getClosure().call(initArg);//初始化mapping层
         filterDelegate.getAndClear()
-                .stream()
-                .map(this::doInit)
                 .forEach(h -> {
+                    Mapping mapping = doInit(h);//修复在同一个shipper中同名的插件无法二次使用的问题
                     Object arg = eventRef.get();
                     if (arg == null) {
-                        log.debug("null value before {}", h);
+                        log.debug("null value before {}", mapping);
                         return;
                     }
-                    log.debug("do filter {} by {} type {}", h, arg, arg.getClass().getSimpleName());
-                    if (arg instanceof Collection && h instanceof MultiMapping) {
-                        eventRef.set(((MultiMapping) h).multiMapping((Collection) arg));
+                    log.debug("do filter {} by {} type {}", mapping, arg, arg.getClass().getSimpleName());
+                    if (arg instanceof Collection && mapping instanceof MultiMapping) {
+                        eventRef.set(((MultiMapping) mapping).multiMapping((Collection) arg));
                     } else {
-                        eventRef.set(h.mapping(arg));
+                        eventRef.set(mapping.mapping(arg));
                     }
                 });
         step = FILTER_DONE;
@@ -217,14 +216,13 @@ public abstract class AbstractShipperTask implements ShipperTask, AutoCloseable,
         outputDelegate.getClosure().call(arg);//初始化output层
 
         outputDelegate.getAndClear()
-                .stream()
-                .map(this::doInit)
                 .forEach(h -> {
+                    Output output = doInit(h);
                     log.debug("do output {}", h);
-                    if (h instanceof CodecOutput)
-                        ((CodecOutput) h).codecWrite(arg);
+                    if (output instanceof CodecOutput)
+                        ((CodecOutput) output).codecWrite(arg);
                     else
-                        h.write(arg);
+                        output.write(arg);
                 });
         step = WAITING_DONE;
     }

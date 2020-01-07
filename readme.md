@@ -1,4 +1,4 @@
-## oh-my-shipper
+## shipper
 
 ### 简介
 这是一个基于groovy的模仿了 `logstash` 的java实现.
@@ -19,7 +19,7 @@ input|[codc]|[filter]|[codc]|[output]
 
 shipper是用不同的**Handler**来实现这些的,默认情况下是使用**串行**来执行这些操作,但也可以通过**扩展**的方式来实现为广播事件并分配到不同的线程来执行,或者其他任意的方式.
 
-shipper会给事件附加一些额外信息.例如**@timestamp**,**@version**等,一般来说,形如**@xx**格式的filed是组件附加的额外信息.如果试图自行添加一个**@xx**格式的filed,shipper会报告一个错误,并且会根据执行器的不同来决定是否忽略这个非法的filed或者直接拒绝执行这个filed.一般来说是直接拒绝执行,因为这不符合预期(暂未实现).
+shipper会给事件附加一些额外信息.例如**@timestamp**,**@version**等,一般来说,形如**@xx**格式的filed是组件附加的额外信息.
 
 所有的**handler**都支持4个方法,方法会在**成功时执行**.(暂未实现)
 
@@ -117,7 +117,7 @@ Stdin {
 
 - hash
 
-  > hash type:'web',p:123
+  > hash [type:'web',p:123]
 
 #### 引用
 
@@ -193,18 +193,18 @@ filter{
 
 主入口是`ShipperExecutor`接口
 
-该接口提供两个方法可供使用
+该接口是ExecutorService的子接口,通过代理的方式,所有的ExecutorService接口都由实际上的ExecutorService实现来执行,新增了以下两个接口
 
 ```java
-void executor(String dsl);
-List<ShipperTaskFuture> submit(String dsl);
+default void execute(ShipperTask shipperTask) {
+    submit(shipperTask);
+}
+CompletableFuture<ShipperTask> submit(ShipperTask shipperTask);
 ```
 
-参数为dsl字符串
+参数为ShipperTask
 
 函数可能抛出`ShipperException`
-
-使用方式和`Executor`类似,实际上内部是使用了executor的代理
 
 一个标准的使用方式如下
 
@@ -218,9 +218,11 @@ ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1, TimeUn
 });
 ShipperBuilder shipperBuilder=new StandardShipperBuilder(standardHandlerBuilder);
 ShipperTaskBuilder shipperTaskBuilder = new StandardShipperTaskBuilder();
-try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(shipperBuilder, shipperTaskBuilder, threadPoolExecutor)) {
-    standardShipperExecutor.execute(dsl);
-}
+shipperTaskBuilder
+                .build(shipperBuilder.build(dsl))
+                .stream()
+                .map(shipperExecutor::submit)
+                .collect(Collectors.toList())
 ```
 
 该接口实现了`AutoClosed`接口,会关闭相关资源
@@ -232,11 +234,39 @@ try (ShipperExecutor standardShipperExecutor = new StandardShipperExecutor(shipp
 3. 构造一个`ShipperTaskBuilder`
 4. 构造一个`ShipperExecutor`
 5. 执行对应的dsl
-6. 释放资源
+
+为了简单的使用提供了**BootstrapShipper**类,作为shipper的启动器
+
+提供了两个方法以供使用
+
+```java
+List<CompletableFuture<ShipperTask>> submit(String dsl);
+void executeBySource(String sourceFile);
+```
+
+
 
 #### 持续运行
 
-实际上input决定了一个shipperTask是否持续执行.在标准实现中只要input是可用的,即使所有output都失效了,也可以持续的执行.如果需要更改这个行为,可以重新实现一个task和builder.
+实际上input决定了一个shipperTask是否持续执行.在标准实现中input具有3种类型,simple,loop和cron.他们各自的意义也显而易见
+
+需要注意的是simple的input可以简单的变为cron类型
+
+只需要在input域中添加cron字段即可.如下
+
+```shipper
+input {
+    IdentityInput {
+        identity = "1234"
+    }
+    cron = "*/5 * * * * ?"
+}
+output {
+    StdOutput {}
+}
+```
+
+
 
 每个input都对应了一个执行线程,后续的filter之类的操作实际上是在这个线程中由上往下执行的.如果需要更改这个行为,可以重新实现task和builder.
 
@@ -261,3 +291,8 @@ if(it['message']=="end")
 其中对于3,4最好的实现是纯代码,但有时需要保存一些状态,则需要考虑到实例状态.
 
 一个插件在一个dsl中只会进行生成一次,但对每个event应用插件动作时,会重新执行一次dsl中的初始化过程.
+
+也就是说在同一个shipper任务的执行过程中,插件是单例的,但插件每次使用都会重新初始化成员.
+
+
+

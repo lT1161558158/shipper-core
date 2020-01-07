@@ -25,12 +25,8 @@ public class StandardLoopShipperTask extends StandardSimpleShipperTask implement
 
     @Override
     protected void doSomething() throws InterruptedException {
-        while (!Thread.currentThread().isInterrupted() && !recyclable.isInterrupted() && loop())
+        while (!Thread.currentThread().isInterrupted() && !recyclable.isInterrupted() && recyclable.recyclable())
             super.doSomething();
     }
 
-    @Override
-    public boolean loop() {
-        return recyclable.recyclable();
-    }
 }

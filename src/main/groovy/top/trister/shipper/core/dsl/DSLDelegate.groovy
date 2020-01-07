@@ -23,6 +23,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
             if (arg instanceof Closure) {
                 if (!handlerDefinitions.containsKey(name)) {
                     def handler = handlerBuilder.builderHandler(name)
+                    //TODO 单例复用问题
                     def definition = new HandlerDefinition()
                     Closure closure = arg
                     def delegate = new HandlerDelegate(handler, handlerBuilder)
@@ -38,7 +39,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
                     handlerList << handlerDefinitions[name]
                 }
             } else {
-                super.propertyMissing(name,arg)
+                super.propertyMissing(name, arg)
             }
         }
     }
@@ -48,7 +49,7 @@ class DSLDelegate<T extends Handler> extends PropertiesDelegate {
         return "${this.class} [ handlerDefinitions :$handlerDefinitions]"
     }
 
-    String cron(){
+    String cron() {
         return properties["cron"]
     }
 
